@@ -1,0 +1,5 @@
+<launch>
+<node name="get_joint_states" pkg="yeebot_commute" type="get_joint_states" respawn="false"  output="screen">
+    </node>
+
+</launch>

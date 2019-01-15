@@ -1,0 +1,8 @@
+int8 dim  #size of joint values
+#char cmd# indicate which values:p-pos;v-velocity;
+---
+string[] name
+float64[] position
+float64[] velocity
+float64[] effort
+bool result
