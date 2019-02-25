@@ -70,6 +70,7 @@
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>moveit_planners_omp</build_depend>
   <build_depend>rviz_visual_tools</build_depend>
+  <build_depend>trac_ik_lib</build_depend>
 
   
 
@@ -82,6 +83,7 @@
   <exec_depend>moveit_planners_ompl</exec_depend>
   <exec_depend>moveit_ros_planning_interface</exec_depend>
   <exec_depend>rviz_visual_tools</exec_depend>
+  <exec_depend>track_ik_lib</exec_depend>
 
 
 

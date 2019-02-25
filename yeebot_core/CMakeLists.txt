@@ -23,12 +23,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometric_shapes
   moveit_ros_planning_interface
   moveit_planners_ompl
+  trac_ik_lib
 )  
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 find_package(orocos_kdl REQUIRED)
 find_package(ompl REQUIRED)
+#find_package(trac_ik_lib REQUIRED)
 
 #set(ompl_include_dirs /home/yee/ompl_moveit/devel/include/ompl
 #)
@@ -45,6 +47,7 @@ catkin_package(
     #moveit_planners_ompl
     moveit_ros_planning_interface
     rviz_visual_tools
+    #trac_ik_lib
                        #important
   
   LIBRARIES 
@@ -57,6 +60,7 @@ catkin_package(
   DEPENDS
     EIGEN3
     orocos_kdl
+    #trac_ik_lib
    # ompl
 )
 
@@ -65,8 +69,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   SYSTEM ${EIGEN3_INCLUDE_DIRS}
   SYSTEM ${Boost_INCLUDE_DIRS}
-  SYSTEM ${orocos_kdl_INCLUDE_DIRS}
+  #SYSTEM ${orocos_kdl_INCLUDE_DIRS} #otherwise error// old version
   #SYSTEM ${OMPL_INCLUDE_DIRS}
+  #SYSTEM ${trac_ik_lib_INCLUDE_DIRS}
 )
 #link_directories(BEFORE ${OMPL_LIBRARY_DIRS})
 
@@ -77,8 +82,20 @@ add_library(${PROJECT_NAME}
   src/kine_kdl.cpp
   src/pose_constraint.cpp
   src/planning_context.cpp
+  src/iksolverpos_optp.cpp
+  src/iksolverpos_tlp.cpp
+  src/iksolverpos_trackp.cpp
+  src/iksolvervel_project.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${urdfdom_LIBRARIES} ${urdfdom_headers_LIBRARIES} ${OMPL_LIBRARIES} ${Boost_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(
+  ${PROJECT_NAME}
+   ${catkin_LIBRARIES} 
+   ${urdfdom_LIBRARIES} 
+   ${urdfdom_headers_LIBRARIES}
+  ${OMPL_LIBRARIES} 
+  ${Boost_LIBRARIES} 
+  #${orocos_kdl_LIBRARIES} 
+  "/usr/lib/x86_64-linux-gnu/libnlopt.a")
 #ompl should be OMPL
 
 # Mark executables and/or libraries for installation

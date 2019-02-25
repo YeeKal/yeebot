@@ -1,5 +1,5 @@
-#ifndef YEEBOT_KINE_KDL_H
-#define YEEBOT_KINE_KDL_H
+#ifndef YEEBOT_KINE_TRACKIK_H
+#define YEEBOT_KINE_TRACKIK_H
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
@@ -19,9 +19,9 @@
 #include "yeebot_core/utils.h"
 
 namespace yeebot{
-class KineKdl:public KineBase {
+class KineTrackIk:KineBase {
 public:
-    KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name);
+    KineTrackIk(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name);
 
     bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
@@ -121,9 +121,9 @@ private:
     Eigen::MatrixXd joint_limits_;  //col(0) joint min;col(1) joint max;
     
 
-};//class KineKdl
-typedef std::shared_ptr<KineKdl> KineKdlPtr;
-typedef std::shared_ptr<const KineKdl> KineKdlConstPtr;
+};//class KineTrackIk
+typedef std::shared_ptr<KineTrackIk> KineTrackIkPtr;
+typedef std::shared_ptr<const KineTrackIk> KineTrackIkConstPtr;
 }//namesapce yeebot
 
-#endif //YEEBOT_KINE_KDL_H
+#endif //YEEBOT_KINE_TRACKIK_H
