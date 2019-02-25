@@ -3,7 +3,7 @@
 
 namespace yeebot{
 
-PoseConstraint::PoseConstraint(Eigen::VectorXd invalid_vector,KineKdlPtr kine_kdl)
+PoseConstraint::PoseConstraint(Eigen::VectorXi invalid_vector,KineKdlPtr kine_kdl)
 :ompl::base::Constraint(kine_kdl->getJointsNum(),1),
 invalid_vector_(invalid_vector),kine_kdl_(kine_kdl)
 //cant use kine_kdl_->getJointsNum, and I dont know why
@@ -22,7 +22,7 @@ void PoseConstraint::updateManifold(){
     setManifoldDimension(mani_dim);
 }
 
-void PoseConstraint::setInvalidVector(Eigen::VectorXd &x){
+void PoseConstraint::setInvalidVector(Eigen::VectorXi &x){
         invalid_vector_=x;
         updateManifold();
 }

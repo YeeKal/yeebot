@@ -9,12 +9,12 @@ namespace yeebot{
     
 class PoseConstraint: public ompl::base::Constraint{
 protected:
-    Eigen::VectorXd invalid_vector_;    //invalid axis for xyz-rpy
+    Eigen::VectorXi invalid_vector_;    //invalid axis for xyz-rpy
     Eigen::Isometry3d ref_pose_;    //reference pose, default to Isometry3d::Identity()
 
     KineKdlConstPtr kine_kdl_;
 public:
-    PoseConstraint(Eigen::VectorXd invalid_vector,KineKdlPtr kine_kdl);
+    PoseConstraint(Eigen::VectorXi invalid_vector,KineKdlPtr kine_kdl);
 
     /**
      * update manifold dimension according to invalid_vector_
@@ -23,7 +23,7 @@ public:
     /**
      * reset invalid_vector_
      */ 
-    void setInvalidVector(Eigen::VectorXd &x);
+    void setInvalidVector(Eigen::VectorXi &x);
     void setRefPose(Eigen::Isometry3d &ref_pose);
     void getRefPose(Eigen::Isometry3d &ref_pose) const;
 

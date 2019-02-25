@@ -40,7 +40,7 @@ explicit关键字用来修饰类的构造函数，
     int getSVDResult() const {return svdResult_;};
     
     Eigen::VectorXi invalid_axis_;
-     unsigned int invalid_dim_;
+    unsigned int invalid_dim_;
     const KDL::Chain& chain_;
     KDL::ChainJntToJacSolver jnt2jac_;
     unsigned int nj_;

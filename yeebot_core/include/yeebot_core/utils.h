@@ -118,6 +118,11 @@ inline void KDL2Eigen(const KDL::Jacobian& k, Eigen::Ref<Eigen::MatrixXd> e){
 inline void Eigen2KDL(const Eigen::Ref<const Eigen::VectorXd>& e, KDL::JntArray& k){
     k.data = e;
 }
+inline void Eigen2KDL(const Eigen::Ref<const Eigen::VectorXi>& e, KDL::JntArray& k){
+    for(unsigned int i=0;i<e.size();i++){
+        k.data[i]=e[i];
+    }
+}
 inline void KDL2Eigen(const KDL::JntArray& k,Eigen::Ref<Eigen::VectorXd> e){
     //TODO::check size
     for(unsigned int i=0;i<k.rows();i++){
@@ -131,6 +136,11 @@ inline void KDL2Eigen(const KDL::Vector& k,Eigen::Vector3d& e){
 	}
 }
 inline void Eigen2KDL(const Eigen::Ref<const Eigen::VectorXd>& e,KDL::Vector& k){
+	for(unsigned i=0;i<3;i++){
+		k.data[i]=e[i];
+	}
+}
+inline void Eigen2KDL(const Eigen::Ref<const Eigen::VectorXi>& e,KDL::Vector& k){
 	for(unsigned i=0;i<3;i++){
 		k.data[i]=e[i];
 	}

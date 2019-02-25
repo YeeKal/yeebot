@@ -7,9 +7,10 @@ namespace yeebot{
 IkSolverPosTLP::IkSolverPosTLP(const KDL::Chain& _chain,const KDL::JntArray& _q_min, const KDL::JntArray& _q_max, 
     Eigen::VectorXi invalid_axis,double _maxtime, double _eps,
     bool _random_restart, bool _try_jl_wrap)
-    :chain(_chain), q_min(_q_min), q_max(_q_max), vik_solver(_chain), fksolver(_chain), delta_q(_chain.getNrOfJoints()),
+    //class shoud be initialized first??
+    :vel_solver_proj_(_chain,invalid_axis),chain(_chain), q_min(_q_min), q_max(_q_max), vik_solver(_chain), fksolver(_chain), delta_q(_chain.getNrOfJoints()),
     maxtime(_maxtime),eps(_eps),rr(_random_restart),wrap(_try_jl_wrap),
-    invalid_axis_(invalid_axis),vel_solver_proj_(chain,invalid_axis)
+    invalid_axis_(invalid_axis)
 {
     assert(chain.getNrOfJoints()==_q_min.data.size());
     assert(chain.getNrOfJoints()==_q_max.data.size());
@@ -64,7 +65,13 @@ int IkSolverPosTLP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, K
         
         if (std::abs(delta_twist.rot.z()) <= std::abs(bounds.rot.z()))
             delta_twist.rot.z(0);
-
+//de
+        double twist_error=0;
+        for(int i=0;i<6;i++){
+            twist_error +=delta_twist[i]*delta_twist[i];
+        }
+        std::cout<<"tlp error:"<<twist_error<<std::endl;
+//
         if(KDL::Equal(delta_twist,KDL::Twist::Zero(),eps))
             return 1;
 
@@ -255,8 +262,8 @@ int IkSolverPosTLP::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_i
     return -3;
   }
 
-  IkSolverPosTLP::~IkSolverPosTLP()
-  {
-  }
+IkSolverPosTLP::~IkSolverPosTLP()
+{
+}
 
 }//end namesapce yeebot

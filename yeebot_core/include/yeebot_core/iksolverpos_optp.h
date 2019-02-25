@@ -17,7 +17,7 @@ public:
     IkSolverPosOPTP(const KDL::Chain& chain,const KDL::JntArray& q_min, const KDL::JntArray& q_max, 
                     Eigen::VectorXi invalid_axis,double maxtime=0.005, double eps=1e-3,
                     OptType type=SumSq);
-    ~IkSolverPosOPTP();
+    ~IkSolverPosOPTP(){};
     /**
      * @brief project joint values according to 6 axis: x y z r p y
      */ 

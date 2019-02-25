@@ -88,7 +88,7 @@ PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type)
     //kine
     spec_.base_link_name_=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
     spec_.tip_link_name_=jmg->getLinkModelNames().back();
-    kine_kdl_.reset(new yeebot::KineKdl(spec_.robot_description_,spec_.base_link_name_,spec_.tip_link_name_));
+    kine_kdl_.reset(new yeebot::KineKdl(spec_.robot_description_,spec_.base_link_name_,spec_.tip_link_name_,spec_.invalid_vector_));
 
      //model state space
     ompl_interface::ModelBasedStateSpaceSpecification model_ss_spec(robot_model_, jmg);

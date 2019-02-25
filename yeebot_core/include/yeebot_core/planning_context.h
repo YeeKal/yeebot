@@ -36,7 +36,7 @@ struct PlanningSpec{
     std::string planning_group_;
     std::string base_link_name_;
     std::string tip_link_name_;
-    Eigen::VectorXd invalid_vector_;
+    Eigen::VectorXi invalid_vector_;
     Eigen::Isometry3d ref_pose_;
 };
 

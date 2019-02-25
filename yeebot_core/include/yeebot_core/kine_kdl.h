@@ -17,11 +17,12 @@
 
 #include "yeebot_core/kine_base.h"
 #include "yeebot_core/utils.h"
+#include "yeebot_core/iksolverpos_trackp.h"
 
 namespace yeebot{
 class KineKdl:public KineBase {
 public:
-    KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name);
+    KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6));
 
     bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
@@ -32,7 +33,10 @@ public:
     bool calcJac(Eigen::Ref<Eigen::MatrixXd> &jacobian, const Eigen::Ref<const Eigen::VectorXd> &joint_values ) const override;
 
     bool getError(const int error_status) const;
-     
+
+    bool trackProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out);
     /**
      * @brief project joint values according to 6 axis: x y z r p y
      * @ref_pose reference homogeneous coordinates
@@ -41,7 +45,7 @@ public:
      * @joint_out result joint values
      */
     bool axisProject(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &joint_in,
                      Eigen::Ref<Eigen::VectorXd> joint_out
                      )const;
@@ -54,14 +58,14 @@ public:
      * calculate the differentiate between two frames
      */ 
     void function(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> err_out) const;
     /**
      * jacobian for constraint space.
      * calculate the truncated jacobian for invalid axis.
      */ 
-    void jacobian(const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+    void jacobian(const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::MatrixXd> jac_out)const;
     /**
@@ -70,7 +74,7 @@ public:
      * use eigen svd
      */ 
     bool project(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd>& jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const;
 
@@ -104,6 +108,7 @@ public:
 	std::shared_ptr<KDL::ChainIkSolverVel_pinv> iksolver_vel_;
     //take joint limits into account
 	std::shared_ptr<KDL::ChainIkSolverPos_NR_JL> iksolver_nr_jl_;
+    IkSolverPosTrackP iksolver_trackp;
 
 private:
     int max_iter_;     // max iteration for ik and axis project
@@ -119,6 +124,7 @@ private:
     std::vector<std::string> joint_names_;
     urdf::Model robot_model_;
     Eigen::MatrixXd joint_limits_;  //col(0) joint min;col(1) joint max;
+    Eigen::VectorXi invalid_axis_;
     
 
 };//class KineKdl

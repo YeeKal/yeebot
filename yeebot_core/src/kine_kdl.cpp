@@ -4,10 +4,11 @@
 
 
 namespace yeebot{
-    KineKdl::KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name)
-    :KineBase(),
-    base_name_(base_name),tip_name_(tip_name),
-    max_iter_(100),eps_(1e-6),project_error_(1e-3){
+    KineKdl::KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis)
+    :KineBase(),invalid_axis_(invalid_axis),base_name_(base_name),tip_name_(tip_name),
+    max_iter_(100),eps_(1e-6),project_error_(1e-3),
+    iksolver_trackp(base_name,tip_name,invalid_axis,urdf_param)
+{
         robot_model_.initParam(urdf_param);
         if(!kdl_parser::treeFromUrdfModel(robot_model_,tree_)){
             std::cout<<"error!failed to initialize kdl tree from urdf model."<<std::endl;
@@ -172,10 +173,22 @@ namespace yeebot{
         }
         return false;
     }
-   
+   bool KineKdl::trackProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+    {   
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+
+        int error_status=iksolver_trackp.project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        KDL2Eigen(kdl_jnt_out,jnt_out);
+        return getError(error_status);
+    }
     //kdl project with joint limits
     bool KineKdl::axisProject(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const
     {   
@@ -242,7 +255,7 @@ namespace yeebot{
 
      //for function in constraint space
     void KineKdl::function(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> err_out) const{
         //err_out should have the correct size
@@ -272,7 +285,7 @@ namespace yeebot{
         }//end for
     }
     //for jacobian in constraint space
-    void KineKdl::jacobian(const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+    void KineKdl::jacobian(const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::MatrixXd> jac_out)const {
         Eigen::MatrixXd jac(6,joint_num_);
@@ -298,7 +311,7 @@ namespace yeebot{
     eigen is slower(1000,1.6s) but less times to fail.
     */
     bool KineKdl::project(const Eigen::Isometry3d& ref_pose, 
-                     const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd>  jnt_out) const{
          //convert eigen to kdl
