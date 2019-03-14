@@ -53,6 +53,8 @@ public:
      */ 
     int CartToJnt(const KDL::JntArray& q_init, const KDL::Frame& p_in, KDL::JntArray& q_out, const KDL::Twist bounds=KDL::Twist::Zero());
     int project(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out, const KDL::Twist bounds=KDL::Twist::Zero());
+    int projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out, const KDL::Twist _bounds=KDL::Twist::Zero());
+
     inline void setMaxtime(double t) { maxtime = t; }
     //added
     Eigen::VectorXi invalid_axis_;

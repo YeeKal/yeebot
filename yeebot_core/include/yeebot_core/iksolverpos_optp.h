@@ -40,6 +40,7 @@ public:
 //private:
     Eigen::VectorXi invalid_axis_;
     nlopt::opt optp;//a new opt for project
+    unsigned int invalid_dim_;
 
     //before
     inline void abort() {

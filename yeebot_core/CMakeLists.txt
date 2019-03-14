@@ -86,6 +86,7 @@ add_library(${PROJECT_NAME}
   src/iksolverpos_tlp.cpp
   src/iksolverpos_trackp.cpp
   src/iksolvervel_project.cpp
+  src/cbirrt.cpp
 )
 target_link_libraries(
   ${PROJECT_NAME}

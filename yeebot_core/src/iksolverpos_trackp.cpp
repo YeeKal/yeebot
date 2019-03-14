@@ -256,7 +256,6 @@ bool IkSolverPosTrackP::runSolverP(T1& solver, T2& other_solver,
     other_solver.abort();
 
     solver.setMaxtime(fulltime);
-
     return true;
 
 }
@@ -369,9 +368,9 @@ bool IkSolverPosTrackP::runSolver(T1& solver, T2& other_solver,
 
     for (unsigned int j=0; j<seed.data.size(); j++)
         if (types[j]==BasicJointType::Continuous)
-        seed(j)=fRand(q_init(j)-2*M_PI, q_init(j)+2*M_PI);
+            seed(j)=fRand(q_init(j)-2*M_PI, q_init(j)+2*M_PI);
         else
-        seed(j)=fRand(lb(j), ub(j));
+            seed(j)=fRand(lb(j), ub(j));
     }
     other_solver.abort();
 

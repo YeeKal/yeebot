@@ -65,18 +65,34 @@ int IkSolverPosTLP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, K
         
         if (std::abs(delta_twist.rot.z()) <= std::abs(bounds.rot.z()))
             delta_twist.rot.z(0);
-//de
+
+        // if(KDL::Equal(delta_twist,KDL::Twist::Zero(),eps))
+        //     return 1;
+
+        delta_twist = KDL::diff(f, m_in);
+
         double twist_error=0;
-        for(int i=0;i<6;i++){
-            twist_error +=delta_twist[i]*delta_twist[i];
+        //get invalid error
+        unsigned int invalid_row=0;
+        unsigned int small=0;
+        for(unsigned int i=0;i<6;i++){
+            if(invalid_axis_(i)){
+                delta_twist[invalid_row]=delta_twist[i];
+                if(fabs(delta_twist[invalid_row])<eps) small++;
+                invalid_row++;
+            }
         }
-        std::cout<<"tlp error:"<<twist_error<<std::endl;
-//
-        if(KDL::Equal(delta_twist,KDL::Twist::Zero(),eps))
+        if(invalid_row==small){
             return 1;
+        }
 
-        delta_twist = diff(f, m_in);
-
+        //de
+        
+        // for(int i=0;i<invalid_row;i++){
+        //     twist_error +=delta_twist[i]*delta_twist[i];
+        // }
+        // std::cout<<"tlp error:"<<twist_error<<std::endl;
+//
         //changed here
         //vik_solver.CartToJnt(q_out,delta_twist,delta_q);
         //it's better to use shared_ptr for api later
@@ -137,6 +153,129 @@ int IkSolverPosTLP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, K
                     else
                         q_curr(j)=fRand(q_min(j),q_max(j));
             }
+        }
+
+        q_out=q_curr;
+        timediff=boost::posix_time::microsec_clock::local_time()-start_time;
+        time_left = maxtime - timediff.total_nanoseconds()/1000000000.0;
+    } while (time_left > 0 && !aborted);
+    
+    return -3;
+}
+int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out, const KDL::Twist _bounds){
+    if (aborted) //??
+        return -3;
+
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration timediff;
+    q_out = q_in;
+    bounds = _bounds;
+           
+    double time_left;
+
+    do {
+        fksolver.JntToCart(q_out,f);//Frame f
+        delta_twist = diffRelative(m_in, f);
+
+        if (std::abs(delta_twist.vel.x()) <= std::abs(bounds.vel.x()))
+            delta_twist.vel.x(0);
+        
+        if (std::abs(delta_twist.vel.y()) <= std::abs(bounds.vel.y()))
+            delta_twist.vel.y(0);
+        
+        if (std::abs(delta_twist.vel.z()) <= std::abs(bounds.vel.z()))
+            delta_twist.vel.z(0);
+        
+        if (std::abs(delta_twist.rot.x()) <= std::abs(bounds.rot.x()))
+            delta_twist.rot.x(0);
+        
+        if (std::abs(delta_twist.rot.y()) <= std::abs(bounds.rot.y()))
+            delta_twist.rot.y(0);
+        
+        if (std::abs(delta_twist.rot.z()) <= std::abs(bounds.rot.z()))
+            delta_twist.rot.z(0);
+
+        // if(KDL::Equal(delta_twist,KDL::Twist::Zero(),eps))
+        //     return 1;
+
+        delta_twist = KDL::diff(f, m_in);
+
+        double twist_error=0;
+        //get invalid error
+        unsigned int invalid_row=0;
+        unsigned int small=0;
+        for(unsigned int i=0;i<6;i++){
+            if(invalid_axis_(i)){
+                delta_twist[invalid_row]=delta_twist[i];
+                if(fabs(delta_twist[invalid_row])<eps) small++;
+                invalid_row++;
+            }
+        }
+        if(invalid_row==small){
+            return 1;
+        }
+
+        //de
+        
+        // for(int i=0;i<invalid_row;i++){
+        //     twist_error +=delta_twist[i]*delta_twist[i];
+        // }
+        // std::cout<<"tlp error:"<<twist_error<<std::endl;
+//
+        //changed here
+        //vik_solver.CartToJnt(q_out,delta_twist,delta_q);
+        //it's better to use shared_ptr for api later
+        vel_solver_proj_.CartToJnt(q_out,delta_twist,delta_q);
+        KDL::JntArray q_curr;
+        
+        KDL::Add(q_out,delta_q,q_curr);
+
+        //revise for joint limit
+        for(unsigned int j=0; j<q_min.data.size(); j++) {
+            if (types[j]==yeebot::BasicJointType::Continuous)
+                continue;
+            if(q_curr(j) < q_min(j)) 
+                if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+                    // KDL's default 
+                    q_curr(j) = q_min(j);
+                else {
+                    // Find actual wrapped angle between limit and joint
+                    double diffangle = fmod(q_min(j)-q_curr(j),2*M_PI);
+                    // Subtract that angle from limit and go into the range by a
+                    // revolution
+                    double curr_angle = q_min(j) - diffangle + 2*M_PI;
+                    if (curr_angle > q_max(j))
+                        q_curr(j) = q_min(j);
+                    else
+                        q_curr(j) = curr_angle;
+                }
+        }
+      
+        for(unsigned int j=0; j<q_max.data.size(); j++) {
+            if (types[j]==yeebot::BasicJointType::Continuous)
+                continue;
+
+            if(q_curr(j) > q_max(j)) 
+                if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+                    // KDL's default 
+                    q_curr(j) = q_max(j);
+                else {
+                    // Find actual wrapped angle between limit and joint
+                    double diffangle = fmod(q_curr(j)-q_max(j),2*M_PI);
+                    // Add that angle to limit and go into the range by a revolution
+                    double curr_angle = q_max(j) + diffangle - 2*M_PI;
+                    if (curr_angle < q_min(j))
+                    q_curr(j) = q_max(j);
+                    else
+                    q_curr(j) = curr_angle;
+                }
+        }
+      
+        //get joint value diff
+        Subtract(q_out,q_curr,q_out);
+        //if get stuck local minima
+        if (q_out.data.isZero(boost::math::tools::epsilon<float>())) {
+            return -3;//return false
         }
 
         q_out=q_curr;

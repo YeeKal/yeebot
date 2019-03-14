@@ -1,4 +1,7 @@
-# include "yeebot_core/planning_context.h"
+#include "yeebot_core/cbirrt.h"
+#include "yeebot_core/planning_context.h"
+
+
 
 namespace yeebot{
 
@@ -71,7 +74,7 @@ public:
 //forward declaration od class may cause some error.
 //class StateValidityChecker;
 
-PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type)
+PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type,double project_error)
                                  :spec_(spec),plan_type_(plan_type),
                                  robot_model_(robot_model_loader::RobotModelLoader(spec_.robot_description_).getModel()),
                                  trajectory_(robot_trajectory::RobotTrajectory(robot_model_,spec_.planning_group_))
@@ -85,16 +88,16 @@ PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type)
     robot_state_.reset(new robot_state::RobotState(robot_model_));
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(spec_.planning_group_);
     planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
-    //kine
+    //kine. get tip and effec according to the planning group
     spec_.base_link_name_=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
     spec_.tip_link_name_=jmg->getLinkModelNames().back();
-    kine_kdl_.reset(new yeebot::KineKdl(spec_.robot_description_,spec_.base_link_name_,spec_.tip_link_name_,spec_.invalid_vector_));
+    kine_kdl_.reset(new yeebot::KineKdl(spec_.robot_description_,spec_.base_link_name_,spec_.tip_link_name_,spec_.invalid_vector_,project_error));
 
      //model state space
     ompl_interface::ModelBasedStateSpaceSpecification model_ss_spec(robot_model_, jmg);
     ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
     registerProjections(model_state_space);
-    simply_time_=0.1;
+    simply_time_=0.5;
 
     if(plan_type_==PlanType::NORMAL){
         //space_.reset(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
@@ -102,11 +105,11 @@ PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type)
         si_.reset(new ompl::base::SpaceInformation(space_));
     }
     else if(plan_type_==PlanType::AXIS_PROJECT){
-        yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_));
+        yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_,project_error));
         constraint->setRefPose(spec_.ref_pose_);
         // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
         // registerProjections(model_state_space);
-        space_.reset(new ompl::base::ProjectedStateSpace(model_state_space,constraint));
+        space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
         si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
         
     }
@@ -121,7 +124,7 @@ PlanningContext::PlanningContext(PlanningSpec spec, PlanType plan_type)
     //updatePlanningSpace(model_state_space);
     updatePlanningSetting();
 }
-
+//not used yet
 void PlanningContext::updatePlanningSpace(ompl::base::StateSpacePtr model_state_space){
     switch(plan_type_){
         case PlanType::NORMAL:
@@ -136,7 +139,7 @@ void PlanningContext::updatePlanningSpace(ompl::base::StateSpacePtr model_state_
                 yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_));
                 constraint->setRefPose(spec_.ref_pose_);
                 std::cout<<"init space:"<<model_state_space->getName().c_str()<<std::endl;
-                ompl::base::ProjectedStateSpacePtr projected_space(new ompl::base::ProjectedStateSpace(model_state_space,constraint));
+                ompl::base::YeeProjectedStateSpacePtr projected_space(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
                 std::cout<<"init space:"<<projected_space->getName().c_str()<<std::endl;
                 space_=projected_space;
                 //space_=std::make_shared< ompl::base::ProjectedStateSpace>(model_state_space,constraint);
@@ -157,7 +160,18 @@ void PlanningContext::updatePlanningSetting(){
     ss_.reset(new ompl::geometric::SimpleSetup(si_));
     //if the planner is empty, then set to default planner RRTConnect
     if(planner_.get()==NULL){
-        planner_.reset(new ompl::geometric::RRTConnect(si_));
+        switch(plan_type_){
+        case PlanType::NORMAL:
+            planner_.reset(new ompl::geometric::RRTConnect(si_));
+            break;
+        case PlanType::AXIS_PROJECT:
+            planner_.reset(new ompl::geometric::CBIRRT(si_));
+            break;
+        default:
+            planner_.reset(new ompl::geometric::RRTConnect(si_));
+            break;
+        }
+        
     }
 
     ss_->setPlanner(planner_);
@@ -236,7 +250,9 @@ void PlanningContext::setPlanner(ompl::base::PlannerPtr planner){
 
 bool PlanningContext::plan(double time_d){
     ss_->setup();
-    if(ss_->solve(time_d)){//solve default setup
+    ompl::base::PlannerStatus ps;
+    ps=ss_->solve(time_d);
+    if(ps==ompl::base::PlannerStatus::EXACT_SOLUTION){//solve default setup
         postSolve();
         return true;
     }
@@ -250,10 +266,29 @@ bool PlanningContext::plan(const ompl::base::PlannerTerminationCondition &ptc){
     return false;
 }
 void PlanningContext::postSolve(){
-    ss_->simplifySolution(simply_time_);
+    switch(plan_type_){
+        case PlanType::NORMAL:
+            ss_->simplifySolution(simply_time_);
+            break;
+        case PlanType::AXIS_PROJECT:
+            break;
+        default:
+            break;
+    }
+    //ss_->simplifySolution(simply_time_);
     ompl::geometric::PathGeometric &pg = ss_->getSolutionPath();
-    int path_num=std::max((int)floor(0.5 + pg.length() / (0.02*space_->getMaximumExtent())), 2);
-    pg.interpolate(path_num);
+    switch(plan_type_){
+        case PlanType::NORMAL:{
+            int path_num=std::max((int)floor(0.5 + pg.length() / (0.02*space_->getMaximumExtent())), 2);
+            pg.interpolate(path_num);
+            break;
+        }
+        case PlanType::AXIS_PROJECT:
+            break;
+        default:
+            break;
+    }
+    
     convertPath(pg,trajectory_);
     computeTimeStamps(trajectory_);
 

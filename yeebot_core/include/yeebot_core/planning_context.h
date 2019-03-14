@@ -20,6 +20,7 @@
 //ros
 #include "yeebot_core/kine_kdl.h"
 #include "yeebot_core/pose_constraint.h"
+#include "yeebot_core/yeeprojectedstatespace.h"
 
 namespace yeebot{
 
@@ -62,7 +63,7 @@ public:
 
     
 
-	PlanningContext(PlanningSpec spec, PlanType plan_type);
+	PlanningContext(PlanningSpec spec, PlanType plan_type,double project_error=1e-3);
 
     /**
      * construct simple_setup from planning space.

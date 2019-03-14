@@ -4,10 +4,10 @@
 
 
 namespace yeebot{
-    KineKdl::KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis)
+    KineKdl::KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis,double project_error,double eps)
     :KineBase(),invalid_axis_(invalid_axis),base_name_(base_name),tip_name_(tip_name),
-    max_iter_(100),eps_(1e-6),project_error_(1e-3),
-    iksolver_trackp(base_name,tip_name,invalid_axis,urdf_param)
+    max_iter_(100),eps_(eps),project_error_(project_error),
+    iksolver_trackp(base_name,tip_name,invalid_axis,urdf_param,0.005,project_error_)
 {
         robot_model_.initParam(urdf_param);
         if(!kdl_parser::treeFromUrdfModel(robot_model_,tree_)){
@@ -71,7 +71,31 @@ namespace yeebot{
         }
         return false;
     }
+/**
+ * @solve ik on ur5-10000:
+ * kdl:fail-4115  time-11.15
+ * trac:fail-301 time-8.085
+ * @solve ik on sda-10000:
+ * kdl:fail-8854 time 27.17
+ * trac:fail-4047 time-29.096
+ */ 
 
+    bool KineKdl::trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose)
+    {
+        KDL::JntArray kdl_joints_in,kdl_joints_values;//ik initial joint values
+        Eigen2KDL(joint_in,kdl_joints_in);
+        KDL::Frame kdl_pose;
+        Eigen2KDL(pose,kdl_pose);
+        iksolver_trackp.eps=1e-5;
+        iksolver_trackp.solver_tlp->eps=1e-5;
+        iksolver_trackp.solver_optp->eps=1e-5;
+        int error_status=iksolver_trackp.CartToJnt(kdl_joints_in,kdl_pose,kdl_joints_values);
+        iksolver_trackp.eps=project_error_;
+        iksolver_trackp.solver_tlp->eps=project_error_;
+        iksolver_trackp.solver_optp->eps=project_error_;
+        KDL2Eigen(kdl_joints_values,jnt_out);
+        return getError(error_status);
+    }
 /**
  * @about joint limits-on ur5
  * ik:5000 iteration
@@ -175,14 +199,55 @@ namespace yeebot{
     }
    bool KineKdl::trackProject(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
-                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackP &ik_track)const 
     {   
         KDL::Frame kdl_ref_pose;
         KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
 
-        int error_status=iksolver_trackp.project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        int error_status=ik_track.project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        KDL2Eigen(kdl_jnt_out,jnt_out);
+        return getError(error_status);
+    }
+    bool KineKdl::optpProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+    {   
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+        iksolver_trackp.solver_optp->reset();
+        int error_status=iksolver_trackp.solver_optp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        KDL2Eigen(kdl_jnt_out,jnt_out);
+        return getError(error_status);
+    }
+    bool KineKdl::tlpProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+    {   
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+        iksolver_trackp.solver_tlp->reset();
+        int error_status=iksolver_trackp.solver_tlp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        
+        KDL2Eigen(kdl_jnt_out,jnt_out);
+        return getError(error_status);
+    }
+    bool KineKdl::tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+    {   
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+        iksolver_trackp.solver_tlp->reset();
+        int error_status=iksolver_trackp.solver_tlp->projectNotlocal(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }

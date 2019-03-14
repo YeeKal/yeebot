@@ -20,7 +20,7 @@ public:
 
     //only support sumsq(dq,sum)
     IkSolverPosTrackP(const KDL::Chain& chain,const KDL::JntArray& q_min, const KDL::JntArray& q_max, 
-                    Eigen::VectorXi invalid_axis,double maxtime=0.005, double eps=1e-3,
+                    Eigen::VectorXi invalid_axis,double maxtime=0.005, double eps=1e-5,
                     SolveType _type=Speed);
     IkSolverPosTrackP(const std::string& base_link, const std::string& tip_link,Eigen::VectorXi invalid_axis, const std::string& URDF_param="/robot_description", 
                     double _maxtime=0.005, double _eps=1e-5, SolveType _type=Speed);
@@ -65,6 +65,15 @@ public:
     }
 
     static double JointErr(const KDL::JntArray& arr1, const KDL::JntArray& arr2) {
+        double err = 0;
+        for (uint i=0; i<arr1.data.size(); i++) {
+        err += pow(arr1(i) - arr2(i),2);
+        }
+
+        return err;
+    }
+    //before
+    static double JointErrNorm(const KDL::JntArray& arr1, const KDL::JntArray& arr2) {
         double err = 0;
         for (uint i=0; i<arr1.data.size(); i++) {
         err += pow(arr1(i) - arr2(i),2);

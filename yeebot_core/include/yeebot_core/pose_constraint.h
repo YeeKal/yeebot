@@ -12,9 +12,9 @@ protected:
     Eigen::VectorXi invalid_vector_;    //invalid axis for xyz-rpy
     Eigen::Isometry3d ref_pose_;    //reference pose, default to Isometry3d::Identity()
 
-    KineKdlConstPtr kine_kdl_;
+    KineKdlPtr kine_kdl_;
 public:
-    PoseConstraint(Eigen::VectorXi invalid_vector,KineKdlPtr kine_kdl);
+    PoseConstraint(Eigen::VectorXi invalid_vector,KineKdlPtr kine_kdl,double tolerance=ompl::magic::CONSTRAINT_PROJECTION_TOLERANCE);
 
     /**
      * update manifold dimension according to invalid_vector_
@@ -30,6 +30,9 @@ public:
     void function(const Eigen::Ref<const Eigen::VectorXd> &x,Eigen::Ref<Eigen::VectorXd> out) const override;
     void jacobian(const Eigen::Ref<const Eigen::VectorXd> &x,Eigen::Ref<Eigen::MatrixXd> out) const override;
     bool project(Eigen::Ref<Eigen::VectorXd> x)const override;
+    bool projectNotlocal(Eigen::Ref<Eigen::VectorXd> x)const;
+    bool projectNotlocal(ompl::base::State *state) const;
+    //bool trackProject(Eigen::Ref<Eigen::VectorXd> x);
 
 
 };//end class PoseConstraint

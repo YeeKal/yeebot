@@ -79,6 +79,10 @@ invalid_axis_(invalid_axis)
         break; 
     }
     //alloc a new opt for project
+	invalid_dim_=0;
+	for(unsigned int i=0;i<6;i++ ){
+		if(invalid_axis_[i]) invalid_dim_++;
+	}
    
 }
 
@@ -199,29 +203,30 @@ int IkSolverPosOPTP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, 
 
     if (!aborted && progress < 0) {
 
-      double time_left;
-      diff=boost::posix_time::microsec_clock::local_time()-start_time;
-      time_left = maxtime - diff.total_nanoseconds()/1000000000.0;
+		double time_left;
+		diff=boost::posix_time::microsec_clock::local_time()-start_time;
+		time_left = maxtime - diff.total_nanoseconds()/1000000000.0;
 
-      while (time_left > 0 && !aborted && progress < 0) {
+		while (time_left > 0 && !aborted && progress < 0) {
+			
+			for (uint i=0; i< x.size(); i++){
+				x[i]=fRand(artificial_lower_limits[i], artificial_upper_limits[i]);
+			}
 
-        for (uint i=0; i< x.size(); i++)
-          x[i]=fRand(artificial_lower_limits[i], artificial_upper_limits[i]);
+			optp.set_maxtime(time_left);
 
-        optp.set_maxtime(time_left);
-	
-        try 
-          {
-            optp.optimize(x, minf);
-          } 
-        catch (...) {}
+			try 
+			{
+				optp.optimize(x, minf);
+			} 
+			catch (...) {}
 
-        if (progress == -1) // Got NaNs
-          progress = -3;
-	
-        diff=boost::posix_time::microsec_clock::local_time()-start_time;
-      	time_left = maxtime - diff.total_nanoseconds()/1000000000.0;
-      }
+			if (progress == -1) // Got NaNs
+			progress = -3;
+
+			diff=boost::posix_time::microsec_clock::local_time()-start_time;
+			time_left = maxtime - diff.total_nanoseconds()/1000000000.0;
+		}
     }
            
 
@@ -256,16 +261,23 @@ void IkSolverPosOPTP::cartSumSquaredErrorP(const std::vector<double>& x, double 
     }
     //here
     //旋转矩阵是保距映射
-    KDL::Twist delta_twist =diffRelative(targetPose,currentPose);
-
+    // KDL::Twist delta_twist =diffRelative(targetPose,currentPose);
+    // for (int i=0; i<6; i++) {
+    //     if(std::abs(delta_twist[i]) <= std::abs(bounds[i]))
+    //         delta_twist[i]=0;
+    // }
+    //current-target
+    KDL::Twist delta_twist=KDL::diff(targetPose, currentPose);
     error[0]=0;
-    for (int i=0; i<6; i++) {
-        if(invalid_axis_(i) && std::abs(delta_twist[i]) <= std::abs(bounds[i]))
-            error[0]+=delta_twist[i]*delta_twist[i];
+	unsigned int invalid_eps=0;
+    for(int i=0;i<6;i++){
+        if(invalid_axis_(i)){
+            error[0] +=delta_twist[i]*delta_twist[i];
+			if(fabs(delta_twist[i])<eps) invalid_eps++;
+        }
     }
-    
 
-    if (error[0]<=eps) {
+    if (invalid_dim_==invalid_eps) {
         progress=1;
         best_x=x;
         return;
@@ -616,20 +628,23 @@ double minfuncSumSquaredP(const std::vector<double>& x, std::vector<double>& gra
 
     std::vector<double> vals(x);
 
+	
+
     double jump=boost::math::tools::epsilon<float>();
     double result[1]; 
     c->cartSumSquaredErrorP(vals, result);
 
+	//std::cout<<"grad j:";
     if (!grad.empty()) {
         double v1[1];
         for (uint i=0; i<x.size(); i++) {
-        double original=vals[i];
+          double original=vals[i];
 
-        vals[i]=original+jump;
-        c->cartSumSquaredErrorP(vals, v1);
+          vals[i]=original+jump;
+          c->cartSumSquaredErrorP(vals, v1);
 
-        vals[i]=original;
-        grad[i]=(v1[0]-result[0])/(2.0*jump);
+          vals[i]=original;
+          grad[i]=(v1[0]-result[0])/(2.0*jump);
         }
     }
 

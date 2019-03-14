@@ -14,6 +14,7 @@
 #include <urdf/model.h>
 #include <urdf/urdfdom_compatibility.h>
 
+#include <trac_ik/trac_ik.hpp>
 
 #include "yeebot_core/kine_base.h"
 #include "yeebot_core/utils.h"
@@ -22,19 +23,29 @@
 namespace yeebot{
 class KineKdl:public KineBase {
 public:
-    KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6));
+    KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6),double project_error=1e-3,double eps=1e-6);
 
     bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num) const;
     
     bool solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose) const override;
+    bool trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose);
 
     bool calcJac(Eigen::Ref<Eigen::MatrixXd> &jacobian, const Eigen::Ref<const Eigen::VectorXd> &joint_values ) const override;
 
     bool getError(const int error_status) const;
 
     bool trackProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackP &ik_track) const;
+    bool optpProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out);
+    bool tlpProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out);
+    bool tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
     /**
@@ -109,6 +120,7 @@ public:
     //take joint limits into account
 	std::shared_ptr<KDL::ChainIkSolverPos_NR_JL> iksolver_nr_jl_;
     IkSolverPosTrackP iksolver_trackp;
+    //TRAC_IK::TRAC_IK ik_track;
 
 private:
     int max_iter_;     // max iteration for ik and axis project
