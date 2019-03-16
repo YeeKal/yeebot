@@ -388,22 +388,22 @@ void IkSolverPosTrackP::normalize_seed(const KDL::JntArray& seed, KDL::JntArray&
 
     for (uint i=0; i<lb.data.size(); i++) {
 
-    if (types[i]==BasicJointType::TransJoint)
-        continue;
+        if (types[i]==BasicJointType::TransJoint)
+            continue;
 
-    double target = seed(i);
-    double val = solution(i);
+        double target = seed(i);
+        double val = solution(i);
 
-    normalizeAngle( val, target );
+        normalizeAngle( val, target );
 
-    if (types[i]==BasicJointType::Continuous) {
+        if (types[i]==BasicJointType::Continuous) {
+            solution(i) = val;
+            continue;
+        }
+
+        normalizeAngle( val, lb(i), ub(i) );
+
         solution(i) = val;
-        continue;
-    }
-
-    normalizeAngle( val, lb(i), ub(i) );
-
-    solution(i) = val;
     }
 }
 

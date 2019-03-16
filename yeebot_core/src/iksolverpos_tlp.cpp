@@ -230,7 +230,7 @@ int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame&
         
         KDL::Add(q_out,delta_q,q_curr);
 
-        //revise for joint limit
+        // //revise for joint limit
         for(unsigned int j=0; j<q_min.data.size(); j++) {
             if (types[j]==yeebot::BasicJointType::Continuous)
                 continue;
@@ -244,8 +244,10 @@ int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame&
                     // Subtract that angle from limit and go into the range by a
                     // revolution
                     double curr_angle = q_min(j) - diffangle + 2*M_PI;
-                    if (curr_angle > q_max(j))
+                    if (curr_angle > q_max(j)){
+                        return -3;
                         q_curr(j) = q_min(j);
+                    }
                     else
                         q_curr(j) = curr_angle;
                 }
@@ -264,12 +266,23 @@ int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame&
                     double diffangle = fmod(q_curr(j)-q_max(j),2*M_PI);
                     // Add that angle to limit and go into the range by a revolution
                     double curr_angle = q_max(j) + diffangle - 2*M_PI;
-                    if (curr_angle < q_min(j))
-                    q_curr(j) = q_max(j);
+                    if (curr_angle < q_min(j)){
+                        return -3;
+                        q_curr(j) = q_max(j);
+                    }
                     else
                     q_curr(j) = curr_angle;
                 }
         }
+
+        //project near
+        //revise for joint limit
+        // for(unsigned int j=0; j<q_min.data.size(); j++) {
+        //     if (types[j]==yeebot::BasicJointType::Continuous)
+        //         continue;
+        //     if(q_curr(j) < q_min(j) || q_curr(j)>q_max(j)) 
+        //         return -3;
+        // }
       
         //get joint value diff
         Subtract(q_out,q_curr,q_out);
@@ -331,46 +344,52 @@ int IkSolverPosTLP::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_i
       
       KDL::Add(q_out,delta_q,q_curr);
       
-      for(unsigned int j=0; j<q_min.data.size(); j++) {
+    for(unsigned int j=0; j<q_min.data.size(); j++) {
         if (types[j]==yeebot::BasicJointType::Continuous)
-          continue;
+        continue;
         if(q_curr(j) < q_min(j)) 
-          if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+        if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
             // KDL's default 
             q_curr(j) = q_min(j);
-          else {
+        else {
             // Find actual wrapped angle between limit and joint
             double diffangle = fmod(q_min(j)-q_curr(j),2*M_PI);
             // Subtract that angle from limit and go into the range by a
             // revolution
             double curr_angle = q_min(j) - diffangle + 2*M_PI;
-            if (curr_angle > q_max(j))
-              q_curr(j) = q_min(j);
+            if (curr_angle > q_max(j)){
+                //return -3;
+                q_curr(j) = q_min(j);
+            }
             else
-              q_curr(j) = curr_angle;
-          }
-      }
+                q_curr(j) = curr_angle;
+        }
+    }
       
-      for(unsigned int j=0; j<q_max.data.size(); j++) {
+    for(unsigned int j=0; j<q_max.data.size(); j++) {
         if (types[j]==yeebot::BasicJointType::Continuous)
-          continue;
+        continue;
 
         if(q_curr(j) > q_max(j)) 
-          if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+        if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
             // KDL's default 
             q_curr(j) = q_max(j);
-          else {
+        else {
             // Find actual wrapped angle between limit and joint
             double diffangle = fmod(q_curr(j)-q_max(j),2*M_PI);
             // Add that angle to limit and go into the range by a revolution
             double curr_angle = q_max(j) + diffangle - 2*M_PI;
-            if (curr_angle < q_min(j))
-              q_curr(j) = q_max(j);
+            if (curr_angle < q_min(j)){
+                //maybe it is used in sda,but not used now
+                //need enlightened
+                //return -3;
+                q_curr(j) = q_max(j);
+            }
             else
-              q_curr(j) = curr_angle;
-          }
-      }
-      
+            q_curr(j) = curr_angle;
+        }
+    }
+    
       KDL::Subtract(q_out,q_curr,q_out);
       
       if (q_out.data.isZero(boost::math::tools::epsilon<float>())) {

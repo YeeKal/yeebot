@@ -79,7 +79,10 @@ void ompl::geometric::CBIRRT::setup()
 
 void ompl::geometric::CBIRRT::freeMemory()
 {   
-    std::cout<<"free memory start\n";
+    /*
+    * when the delete pointer memory is needed
+    * 
+    */
     std::vector<Motion *> motions;
 
     if (tStart_)
@@ -92,19 +95,18 @@ void ompl::geometric::CBIRRT::freeMemory()
             delete motion;
         }
     }
-    std::cout<<"1\n";
-
     if (tGoal_)
     {
         tGoal_->list(motions);
         for (auto &motion : motions)
         {
             if (motion->state != nullptr)
+            {
                 si_->freeState(motion->state);
+            }
             delete motion;
         }
     }
-    std::cout<<"free memory end\n";
 }
 
 void ompl::geometric::CBIRRT::clear()
@@ -202,16 +204,7 @@ ompl::geometric::CBIRRT::GrowState ompl::geometric::CBIRRT::growTree(TreeData &t
         nmotion=motion;
     }
     tgi.xmotion = nmotion;//the last added motion
-    tgi.xstate=nmotion->state;
-    
- 
-    // const base::State *astate = tgi.start ? nmotion->state : dstate;
-    // const base::State *bstate = tgi.start ? dstate : nmotion->state;
-
-    // std::vector<base::State *> states;
-    // const unsigned int count = si_->getStateSpace()->validSegmentCount(astate, bstate);
-
-
+    tgi.xstate=si_->cloneState(nmotion->state);//or segment default
 
     return validGeo ? REACHED : ADVANCED;
 }

@@ -3,6 +3,11 @@
 namespace yeebot{
 namespace rvt=rviz_visual_tools;
 
+/*
+ *  this class could easily publish text and collision object. 
+ * the collision object is implemented by PlanningScene.
+ */
+
 class RobotVisualTools: public rviz_visual_tools::RvizVisualTools{
 public:
     planning_scene::PlanningScenePtr planning_scene_;

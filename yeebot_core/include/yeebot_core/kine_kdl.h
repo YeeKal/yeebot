@@ -112,6 +112,8 @@ public:
     }
     void setProjectError(double project_error){
         project_error_=project_error;
+        iksolver_trackp.solver_tlp->eps=project_error_;
+        iksolver_trackp.solver_optp->eps=project_error_;
     }
 
     std::shared_ptr<KDL::ChainFkSolverPos_recursive> fksolver_;
