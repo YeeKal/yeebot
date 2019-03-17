@@ -21,6 +21,13 @@ public:
     void publishText(const std::string &text){
         rviz_visual_tools::RvizVisualTools::publishText(text_pose_,text, rvt::WHITE, rvt::XLARGE);
     }
+    void publishCube(unsigned int id,double x,double y,double z,double scale_x,double scale_y,double scale_z){
+        Eigen::Vector3d trans_eigen;
+        Eigen::Vector3d scale;
+        trans_eigen<<x,y,z;
+        scale<<scale_x,scale_y,scale_z;
+        publishCube(id,trans_eigen,scale);
+    }
     void publishCube(unsigned int id,Eigen::Vector3d trans_eigen,Eigen::Vector3d scale){
         publishCube(id,trans_eigen,Eigen::MatrixXd::Identity(3,3),scale);
     }

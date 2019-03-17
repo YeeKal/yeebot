@@ -3,18 +3,27 @@
 namespace yeebot{
 
 PlanningManager::PlanningManager(const std::string& group_name,
-                                const std::string & robot_description,
-                                const ros::NodeHandle& node_handle )
+                                const ros::NodeHandle& node_handle,
+                                const std::string & robot_description
+                                 )
 :group_name_(group_name),robot_description_(robot_description),node_handle_(node_handle),
-move_group_(group_name_)
+move_group_(moveit::planning_interface::MoveGroupInterface(group_name))
 {	
+    
 	robot_model_loader::RobotModelLoader robot_model_loader(robot_description_);
 	robot_model_=robot_model_loader.getModel();
 	robot_state_.reset(new robot_state::RobotState(robot_model_));
 	planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
     execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction>(
          node_handle_, move_group::EXECUTE_ACTION_NAME, false));
+
+    execute_action_client_->waitForServer();
+    if(! execute_action_client_->isServerConnected()){
+        std::cout<<"server is not connected.\n";
+    }
+
     initializeKine();
+
 
 
 }

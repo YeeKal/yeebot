@@ -4,8 +4,8 @@
  * 
  */
 
-#ifndef YEEBOT_POSE_CONSTRAINT_H
-#define YEEBOT_POSE_CONSTRAINT_H
+#ifndef YEEBOT_PLANNING_MANAGER_H
+#define YEEBOT_PLANNING_MANAGER_H
 
 
 
@@ -16,6 +16,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
+#include <memory>
 #include "yeebot_core/utils.h"
 
 namespace yeebot{
@@ -32,11 +33,12 @@ public:
      * node_handle: give execute action an independent ros handle
      **/ 
 	PlanningManager(const std::string& group_name,
-                    const std::string & robot_description=ROBOT_DESCRIPTION,
-                    const ros::NodeHandle& node_handle = ros::NodeHandle());
+                    const ros::NodeHandle& node_handle = ros::NodeHandle(),
+                    const std::string & robot_description=ROBOT_DESCRIPTION
+                    );
 	~PlanningManager(){}
     void initializeKine();
-    bool execute(const moveit_msgs::RobotTrajectory& robot_trajectory,bool wait);
+    bool execute(const moveit_msgs::RobotTrajectory& robot_trajectory,bool wait=true);
     bool moveitPlan(Eigen::VectorXd& jnv,moveit_msgs::RobotTrajectory& robot_trajectory);
 
 

@@ -21,10 +21,9 @@
 #include "yeebot_core/kine_kdl.h"
 #include "yeebot_core/pose_constraint.h"
 #include "yeebot_core/yeeprojectedstatespace.h"
+#include "yeebot_core/planning_manager.h"
 
 namespace yeebot{
-
-static const std::string ROBOT_DESCRIPTION="robot_description";
 
 enum PlanType{
     NORMAL,             //a common planning problem base on a common space
@@ -33,12 +32,10 @@ enum PlanType{
 
 //TODO: base_link and tip_link will be accessed from planning_group_
 struct PlanningSpec{
-    std::string robot_description_;
-    std::string planning_group_;
-    std::string base_link_name_;
-    std::string tip_link_name_;
     Eigen::VectorXi invalid_vector_;
     Eigen::Isometry3d ref_pose_;
+    double project_error_;
+    double ik_error_;
 };
 
 class PlanningContext{
@@ -59,11 +56,13 @@ public:
     ompl::base::SpaceInformationPtr si_;
     ompl::geometric::SimpleSetupPtr ss_;
     ompl::base::PlannerPtr planner_;
+    PlanningManagerPtr pm_;
     double simply_time_;
 
     
-
-	PlanningContext(PlanningSpec spec, PlanType plan_type,double project_error=1e-3);
+    PlanningContext(PlanningSpec spec,PlanningManagerPtr planning_manager,PlanType plan_type);
+	// PlanningContext(PlanningSpec spec, PlanType plan_type,double project_error=1e-3);
+    ~PlanningContext();
 
     /**
      * construct simple_setup from planning space.
