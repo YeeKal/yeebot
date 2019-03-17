@@ -4,16 +4,32 @@
 
 
 namespace yeebot{
+    /**
+     * chain_ and urdf_model are enough to initialize the kine
+     **/ 
+    KineKdl::KineKdl(KDL::Chain chain,urdf::Model &urdf_model,int max_iter,Eigen::VectorXi invalid_axis,double project_error,double eps)
+    :KineBase(),chain_(chain),max_iter_(max_iter),invalid_axis_(invalid_axis),
+    project_error_(project_error),eps_(eps)
+    {
+        initialize(urdf_model);
+
+    }
+    //base_name_/tip_name/trees
     KineKdl::KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis,double project_error,double eps)
-    :KineBase(),invalid_axis_(invalid_axis),base_name_(base_name),tip_name_(tip_name),
-    max_iter_(100),eps_(eps),project_error_(project_error),
-    iksolver_trackp(base_name,tip_name,invalid_axis,urdf_param,0.005,project_error_)
-{
-        robot_model_.initParam(urdf_param);
-        if(!kdl_parser::treeFromUrdfModel(robot_model_,tree_)){
+    :KineBase(),invalid_axis_(invalid_axis),
+    max_iter_(100),eps_(eps),project_error_(project_error)
+    {       
+        urdf::Model urdf_model;
+        KDL::Tree tree;
+        urdf_model.initParam(urdf_param);
+        if(!kdl_parser::treeFromUrdfModel(urdf_model,tree)){
             std::cout<<"error!failed to initialize kdl tree from urdf model."<<std::endl;
         }
-        tree_.getChain(base_name_,tip_name_,chain_);
+        tree.getChain(base_name,tip_name,chain_);
+        initialize(urdf_model);
+    }
+    //initialize with chain_
+    void KineKdl::initialize(urdf::Model &urdf_model){
         link_num_=chain_.getNrOfSegments();
         joint_num_=chain_.getNrOfJoints();
         link_names_.resize(link_num_);
@@ -28,7 +44,7 @@ namespace yeebot{
                 continue;
 
             joint_names_[j]=jnt.getName();
-            urdf::JointConstSharedPtr joint = robot_model_.getJoint(jnt.getName());
+            urdf::JointConstSharedPtr joint = urdf_model.getJoint(jnt.getName());
             joint_limits_(j,0)=joint->limits->lower;
             joint_limits_(j,1)=joint->limits->upper;
             j++;
@@ -42,15 +58,16 @@ namespace yeebot{
         jac_solver_.reset(new KDL::ChainJntToJacSolver(chain_));
         iksolver_vel_.reset(new KDL::ChainIkSolverVel_pinv(chain_));
         iksolver_nr_jl_.reset(new KDL::ChainIkSolverPos_NR_JL(chain_,joints_min,joints_max,*fksolver_,*iksolver_vel_,max_iter_,eps_));
+        iksolver_trackp_.reset(new yeebot::IkSolverPosTrackP(chain_,joints_min,joints_max,invalid_axis_,0.005,project_error_,Speed));
     }
     bool KineKdl::solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
         return solveFK(pose,joint_values,-1);
     }
     bool KineKdl::solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
-        if(link_name==base_name_){
-            pose.setIdentity();
-            return true;
-        }
+        // if(link_name==base_name_){
+        //     pose.setIdentity();
+        //     return true;
+        // }
         //find the link name index
         for(unsigned int i=0;i<link_num_;i++){
             if(link_name==link_names_[i]){
@@ -86,13 +103,13 @@ namespace yeebot{
         Eigen2KDL(joint_in,kdl_joints_in);
         KDL::Frame kdl_pose;
         Eigen2KDL(pose,kdl_pose);
-        iksolver_trackp.eps=1e-5;
-        iksolver_trackp.solver_tlp->eps=1e-5;
-        iksolver_trackp.solver_optp->eps=1e-5;
-        int error_status=iksolver_trackp.CartToJnt(kdl_joints_in,kdl_pose,kdl_joints_values);
-        iksolver_trackp.eps=project_error_;
-        iksolver_trackp.solver_tlp->eps=project_error_;
-        iksolver_trackp.solver_optp->eps=project_error_;
+        iksolver_trackp_->eps=1e-5;
+        iksolver_trackp_->solver_tlp->eps=1e-5;
+        iksolver_trackp_->solver_optp->eps=1e-5;
+        int error_status=iksolver_trackp_->CartToJnt(kdl_joints_in,kdl_pose,kdl_joints_values);
+        iksolver_trackp_->eps=project_error_;
+        iksolver_trackp_->solver_tlp->eps=project_error_;
+        iksolver_trackp_->solver_optp->eps=project_error_;
         KDL2Eigen(kdl_joints_values,jnt_out);
         return getError(error_status);
     }
@@ -199,14 +216,14 @@ namespace yeebot{
     }
    bool KineKdl::trackProject(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
-                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackP &ik_track)const 
+                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackPPtr &ik_track)const 
     {   
         KDL::Frame kdl_ref_pose;
         KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
 
-        int error_status=ik_track.project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        int error_status=ik_track->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
@@ -218,8 +235,8 @@ namespace yeebot{
         KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
-        iksolver_trackp.solver_optp->reset();
-        int error_status=iksolver_trackp.solver_optp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        iksolver_trackp_->solver_optp->reset();
+        int error_status=iksolver_trackp_->solver_optp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
@@ -231,8 +248,8 @@ namespace yeebot{
         KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
-        iksolver_trackp.solver_tlp->reset();
-        int error_status=iksolver_trackp.solver_tlp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        iksolver_trackp_->solver_tlp->reset();
+        int error_status=iksolver_trackp_->solver_tlp->project(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
         
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
@@ -245,8 +262,8 @@ namespace yeebot{
         KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
-        iksolver_trackp.solver_tlp->reset();
-        int error_status=iksolver_trackp.solver_tlp->projectNotlocal(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        iksolver_trackp_->solver_tlp->reset();
+        int error_status=iksolver_trackp_->solver_tlp->projectNotlocal(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
         
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);

@@ -23,7 +23,10 @@
 namespace yeebot{
 class KineKdl:public KineBase {
 public:
+    KineKdl(KDL::Chain chain,urdf::Model &urdf_model,int max_iter=100,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6),double project_error=1e-3,double eps=1e-6);
     KineKdl(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6),double project_error=1e-3,double eps=1e-6);
+
+    void initialize(urdf::Model &urdf_model);
 
     bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
@@ -38,7 +41,7 @@ public:
 
     bool trackProject(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
-                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackP &ik_track) const;
+                     Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackPPtr &ik_track) const;
     bool optpProject(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
@@ -104,16 +107,16 @@ public:
     const Eigen::MatrixXd& getLimits() const{
         return joint_limits_;
     }
-    const std::string& getTipName() const {
-       return tip_name_; 
-    }
-    const std::string& getBaseName() const{
-        return base_name_;
-    }
+    // const std::string& getTipName() const {
+    //    return tip_name_; 
+    // }
+    // const std::string& getBaseName() const{
+    //     return base_name_;
+    // }
     void setProjectError(double project_error){
         project_error_=project_error;
-        iksolver_trackp.solver_tlp->eps=project_error_;
-        iksolver_trackp.solver_optp->eps=project_error_;
+        iksolver_trackp_->solver_tlp->eps=project_error_;
+        iksolver_trackp_->solver_optp->eps=project_error_;
     }
 
     std::shared_ptr<KDL::ChainFkSolverPos_recursive> fksolver_;
@@ -121,7 +124,7 @@ public:
 	std::shared_ptr<KDL::ChainIkSolverVel_pinv> iksolver_vel_;
     //take joint limits into account
 	std::shared_ptr<KDL::ChainIkSolverPos_NR_JL> iksolver_nr_jl_;
-    IkSolverPosTrackP iksolver_trackp;
+    IkSolverPosTrackPPtr iksolver_trackp_;
     //TRAC_IK::TRAC_IK ik_track;
 
 private:
@@ -131,12 +134,9 @@ private:
     double eps_;        //max error for ik
     double project_error_;  //max error for project
     KDL::Chain chain_;
-    KDL::Tree tree_;
-    std::string base_name_;   //base frame of the chain
-    std::string tip_name_;     //tip frame of the chain
+
     std::vector<std::string> link_names_;    
     std::vector<std::string> joint_names_;
-    urdf::Model robot_model_;
     Eigen::MatrixXd joint_limits_;  //col(0) joint min;col(1) joint max;
     Eigen::VectorXi invalid_axis_;
     

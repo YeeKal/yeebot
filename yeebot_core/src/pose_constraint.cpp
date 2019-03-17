@@ -56,7 +56,7 @@ bool PoseConstraint::project(Eigen::Ref<Eigen::VectorXd> x)const{
             return true;
         }
     }else{
-        if(!kine_kdl_->trackProject(ref_pose_,x,x,kine_kdl_->iksolver_trackp)){
+        if(!kine_kdl_->trackProject(ref_pose_,x,x,kine_kdl_->iksolver_trackp_)){
             if(!kine_kdl_->axisProject(ref_pose_,invalid_vector_,x,x)){
                 //std::cout<<"project failed."<<std::endl;
                 return false;
