@@ -77,6 +77,7 @@ public:
      * the valid check function for planner
      */  
     bool isValid(const ompl::base::State *state) const ;
+    bool isValid(const Eigen::Ref<const Eigen::VectorXd> &jnt) const;
 
     void setStartAndGoalStates(Eigen::Ref<Eigen::VectorXd> start,Eigen::Ref<Eigen::VectorXd> goal);
 
@@ -123,12 +124,16 @@ public:
         return robot_state_;
     }
     void registerProjections(ompl::base::StateSpacePtr& space);
+    bool validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts=10);
+    bool plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts=5);
 
-bool solveIK(const Eigen::Isometry3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const;
 
-bool solveIK(const Eigen::Affine3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const;
 
-bool solveIK(const geometry_msgs::Pose& pose,Eigen::VectorXd &joint_values,int max_attempts) const;
+    bool solveIK(const Eigen::Isometry3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const;
+
+    bool solveIK(const Eigen::Affine3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const;
+
+    bool solveIK(const geometry_msgs::Pose& pose,Eigen::VectorXd &joint_values,int max_attempts) const;
 
 };//end class planningcontext
 typedef std::shared_ptr<PlanningContext> PlanningContextPtr;

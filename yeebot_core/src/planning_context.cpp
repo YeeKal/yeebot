@@ -86,16 +86,13 @@ trajectory_(robot_trajectory::RobotTrajectory(pm->robot_model_,pm->group_name_))
  * ‘robot_trajectory::RobotTrajectory::RobotTrajectory()
  */
 {   
-    std::cout<<"2\n";
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(pm_->group_name_);
-    std::cout<<"2\n";
     kine_kdl_.reset(new yeebot::KineKdl(pm_->chain_,pm_->urdf_model_,100,spec_.invalid_vector_,spec_.project_error_,spec_.ik_error_));
      //model state space
     ompl_interface::ModelBasedStateSpaceSpecification model_ss_spec(robot_model_, jmg);
     ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
     registerProjections(model_state_space);
     simply_time_=0.5;
-    std::cout<<"2\n";
     if(plan_type_==PlanType::NORMAL){
         //space_.reset(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
         space_=model_state_space;
@@ -122,56 +119,6 @@ trajectory_(robot_trajectory::RobotTrajectory(pm->robot_model_,pm->group_name_))
     updatePlanningSetting();
 
 }
-// PlanningContext::PlanningContext(const std::string& group_name,
-//                                 PlanningSpec spec, PlanType plan_type,double project_error,const std::string & robot_description)
-//                                  :spec_(spec),plan_type_(plan_type),
-//                                  robot_model_(robot_model_loader::RobotModelLoader(robot_description).getModel()),
-//                                  trajectory_(robot_trajectory::RobotTrajectory(robot_model_,group_name))
-
-//                                  /**
-//                                   *  if the trajectory_ is not initialized by list,
-//                                   * error occurs: no matching function for call to 
-//                                   * ‘robot_trajectory::RobotTrajectory::RobotTrajectory()
-//                                  */
-// {
-//     robot_state_.reset(new robot_state::RobotState(robot_model_));
-//     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(group_name);
-//     planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
-//     //kine. get tip and effec according to the planning group
-//     spec_.base_link_name_=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
-//     spec_.tip_link_name_=jmg->getLinkModelNames().back();
-//     kine_kdl_.reset(new yeebot::KineKdl(spec_.robot_description_,spec_.base_link_name_,spec_.tip_link_name_,spec_.invalid_vector_,project_error));
-//      //model state space
-//     ompl_interface::ModelBasedStateSpaceSpecification model_ss_spec(robot_model_, jmg);
-//     ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
-//     registerProjections(model_state_space);
-//     simply_time_=0.5;
-
-//     if(plan_type_==PlanType::NORMAL){
-//         //space_.reset(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
-//         space_=model_state_space;
-//         si_.reset(new ompl::base::SpaceInformation(space_));
-//     }
-//     else if(plan_type_==PlanType::AXIS_PROJECT){
-//         yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_,project_error));
-//         constraint->setRefPose(spec_.ref_pose_);
-//         // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
-//         // registerProjections(model_state_space);
-//         space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
-//         si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
-        
-//     }
-//     else{
-//         std::cout<<"not invalid PLanType."<<std::endl;
-//     }
-//     space_->setup();
- 
- 
-//     //std::cout<<"pc"<<std::endl;
-//     //registerProjections(space_);
-//     //updatePlanningSpace(model_state_space);
-//     updatePlanningSetting();
-// }
 PlanningContext::~PlanningContext(){
 
 }
@@ -240,10 +187,11 @@ void PlanningContext::updatePlanningSetting(){
 //for now we use planning scene
 bool PlanningContext::isValid(const ompl::base::State *state)const{
     collision_detection::CollisionRequest req;
-    if (state->as<ompl_interface::ModelBasedStateSpace::StateType>()->isValidityKnown())
+    if (state->as<ompl_interface::ModelBasedStateSpace::StateType>()->isValidityKnown()){
         return state->as<ompl_interface::ModelBasedStateSpace::StateType>()->isMarkedValid();
+    }
     if (!si_->satisfiesBounds(state))
-    {
+    {   
         const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markInvalid();
         return false;
     }
@@ -266,6 +214,34 @@ bool PlanningContext::isValid(const ompl::base::State *state)const{
     else
     {
         const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markInvalid();
+        return false;
+    }
+}
+
+bool PlanningContext::isValid(const Eigen::Ref<const Eigen::VectorXd> &jnt)const{
+    collision_detection::CollisionRequest req;
+    robot_state::RobotState robot_state=planning_scene_->getCurrentStateNonConst();
+    const robot_state::JointModelGroup* jmg = robot_state.getJointModelGroup(pm_->group_name_);
+    robot_state.setJointGroupPositions(jmg, jnt);
+    robot_state.update();
+
+    //si_->getStateSpace()->as<ompl_interface::ModelBasedStateSpace>()->copyToRobotState(robot_state,state);
+    //check feasibility
+    if(!planning_scene_->isStateFeasible(robot_state)){
+        //const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markInvalid();
+        return false;
+    }
+    //check collision
+    collision_detection::CollisionResult res;
+    planning_scene_->checkCollision(req,res,robot_state);
+    if (res.collision == false)
+    {
+        //const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markValid();
+        return true;
+    }
+    else
+    {
+        //const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markInvalid();
         return false;
     }
 }
@@ -433,7 +409,29 @@ void PlanningContext::registerProjections(ompl::base::StateSpacePtr& space){
     };
     space->registerDefaultProjection(std::make_shared<URProjection>(space.get()));
 }
-
+//ik should satisfy collision checking
+bool PlanningContext::validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts){
+    jnt_out=joint_in;//=Eigen::Map<Eigen::VectorXd>(joint_in);
+    for(unsigned int i=0;i<max_attempts;i++ ){
+        if(kine_kdl_->trackSolveIk(jnt_out,jnt_out,pose)){
+            std::cout<<"1\n";
+            if(isValid(jnt_out)){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+//ik need not satisfy collision checking
+bool PlanningContext::plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts){
+    jnt_out=joint_in;
+    for(unsigned int i=0;i<max_attempts;i++ ){
+        if(kine_kdl_->trackSolveIk(jnt_out,jnt_out,pose)){
+            return true;
+        }
+    }
+    return false;
+}
 bool PlanningContext::solveIK(const Eigen::Isometry3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const{
         geometry_msgs::Pose pose;
         tf::poseEigenToMsg(eigen_pose,pose);
