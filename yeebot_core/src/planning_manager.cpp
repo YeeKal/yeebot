@@ -17,10 +17,10 @@ move_group_(moveit::planning_interface::MoveGroupInterface(group_name))
     execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction>(
          node_handle_, move_group::EXECUTE_ACTION_NAME, false));
 
-    execute_action_client_->waitForServer();
-    if(! execute_action_client_->isServerConnected()){
-        std::cout<<"server is not connected.\n";
-    }
+    // execute_action_client_->waitForServer();
+    // if(! execute_action_client_->isServerConnected()){
+    //     std::cout<<"server is not connected.\n";
+    // }
 
     initializeKine();
 

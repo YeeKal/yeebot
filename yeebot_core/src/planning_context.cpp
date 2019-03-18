@@ -245,6 +245,11 @@ bool PlanningContext::isValid(const Eigen::Ref<const Eigen::VectorXd> &jnt)const
         return false;
     }
 }
+//clear last planning result
+//planning pipeline: set->plan
+void PlanningContext::clear(){
+    ss_->clear();
+}
 void PlanningContext::setStartAndGoalStates(Eigen::Ref<Eigen::VectorXd> start,Eigen::Ref<Eigen::VectorXd> goal){
     ompl::base::ScopedState<> start_state(space_);
     //copy start values to start

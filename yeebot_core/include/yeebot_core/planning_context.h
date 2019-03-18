@@ -84,6 +84,7 @@ public:
     void setup(){
         ss_->setup();
     }
+    void clear();
     
     void setOptimizationObjective(const ompl::base::OptimizationObjectivePtr &optimization_objective){
         ss_->setOptimizationObjective(optimization_objective);
