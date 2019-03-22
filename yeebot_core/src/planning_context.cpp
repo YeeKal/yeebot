@@ -419,7 +419,6 @@ bool PlanningContext::validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,
     jnt_out=joint_in;//=Eigen::Map<Eigen::VectorXd>(joint_in);
     for(unsigned int i=0;i<max_attempts;i++ ){
         if(kine_kdl_->trackSolveIk(jnt_out,jnt_out,pose)){
-            std::cout<<"1\n";
             if(isValid(jnt_out)){
                 return true;
             }

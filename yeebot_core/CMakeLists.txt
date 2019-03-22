@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   geometric_shapes
   moveit_ros_planning_interface
+  moveit_simple_controller_manager
   moveit_planners_ompl
   trac_ik_lib
 )  
@@ -47,6 +48,7 @@ catkin_package(
     moveit_core 
     #moveit_planners_ompl
     moveit_ros_planning_interface
+    moveit_simple_controller_manager
     rviz_visual_tools
     #trac_ik_lib
                        #important
