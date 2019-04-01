@@ -163,37 +163,12 @@ int IkSolverPosTLP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, K
     return -3;
 }
 int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out, const KDL::Twist _bounds){
-    if (aborted) //??
-        return -3;
-
-    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::time_duration timediff;
     q_out = q_in;
-    bounds = _bounds;
-           
-    double time_left;
+    int iter_num=100;
 
     do {
         fksolver.JntToCart(q_out,f);//Frame f
         delta_twist = diffRelative(m_in, f);
-
-        if (std::abs(delta_twist.vel.x()) <= std::abs(bounds.vel.x()))
-            delta_twist.vel.x(0);
-        
-        if (std::abs(delta_twist.vel.y()) <= std::abs(bounds.vel.y()))
-            delta_twist.vel.y(0);
-        
-        if (std::abs(delta_twist.vel.z()) <= std::abs(bounds.vel.z()))
-            delta_twist.vel.z(0);
-        
-        if (std::abs(delta_twist.rot.x()) <= std::abs(bounds.rot.x()))
-            delta_twist.rot.x(0);
-        
-        if (std::abs(delta_twist.rot.y()) <= std::abs(bounds.rot.y()))
-            delta_twist.rot.y(0);
-        
-        if (std::abs(delta_twist.rot.z()) <= std::abs(bounds.rot.z()))
-            delta_twist.rot.z(0);
 
         // if(KDL::Equal(delta_twist,KDL::Twist::Zero(),eps))
         //     return 1;
@@ -226,75 +201,69 @@ int IkSolverPosTLP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame&
         //vik_solver.CartToJnt(q_out,delta_twist,delta_q);
         //it's better to use shared_ptr for api later
         vel_solver_proj_.CartToJnt(q_out,delta_twist,delta_q);
-        KDL::JntArray q_curr;
         
-        KDL::Add(q_out,delta_q,q_curr);
-
-        // //revise for joint limit
-        for(unsigned int j=0; j<q_min.data.size(); j++) {
-            if (types[j]==yeebot::BasicJointType::Continuous)
-                continue;
-            if(q_curr(j) < q_min(j)) 
-                if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
-                    // KDL's default 
-                    q_curr(j) = q_min(j);
-                else {
-                    // Find actual wrapped angle between limit and joint
-                    double diffangle = fmod(q_min(j)-q_curr(j),2*M_PI);
-                    // Subtract that angle from limit and go into the range by a
-                    // revolution
-                    double curr_angle = q_min(j) - diffangle + 2*M_PI;
-                    if (curr_angle > q_max(j)){
-                        return -3;
-                        q_curr(j) = q_min(j);
-                    }
-                    else
-                        q_curr(j) = curr_angle;
-                }
-        }
-      
-        for(unsigned int j=0; j<q_max.data.size(); j++) {
-            if (types[j]==yeebot::BasicJointType::Continuous)
-                continue;
-
-            if(q_curr(j) > q_max(j)) 
-                if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
-                    // KDL's default 
-                    q_curr(j) = q_max(j);
-                else {
-                    // Find actual wrapped angle between limit and joint
-                    double diffangle = fmod(q_curr(j)-q_max(j),2*M_PI);
-                    // Add that angle to limit and go into the range by a revolution
-                    double curr_angle = q_max(j) + diffangle - 2*M_PI;
-                    if (curr_angle < q_min(j)){
-                        return -3;
-                        q_curr(j) = q_max(j);
-                    }
-                    else
-                    q_curr(j) = curr_angle;
-                }
-        }
-
-        //project near
-        //revise for joint limit
-        // for(unsigned int j=0; j<q_min.data.size(); j++) {
-        //     if (types[j]==yeebot::BasicJointType::Continuous)
-        //         continue;
-        //     if(q_curr(j) < q_min(j) || q_curr(j)>q_max(j)) 
-        //         return -3;
-        // }
-      
-        //get joint value diff
-        Subtract(q_out,q_curr,q_out);
-        //if get stuck local minima
-        if (q_out.data.isZero(boost::math::tools::epsilon<float>())) {
+  
+        if (delta_q.data.isZero(boost::math::tools::epsilon<float>())) {
             return -3;//return false
         }
 
-        q_out=q_curr;
-        timediff=boost::posix_time::microsec_clock::local_time()-start_time;
-        time_left = maxtime - timediff.total_nanoseconds()/1000000000.0;
-    } while (time_left > 0 && !aborted);
+        KDL::JntArray q_curr;
+        KDL::Add(q_out,delta_q,q_out);
+
+        //revise for joint limit
+        // for(unsigned int j=0; j<q_min.data.size(); j++) {
+        //     if(q_curr(j) < q_min(j)) 
+        //         if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+        //             // KDL's default 
+        //             q_curr(j) = q_min(j);
+        //         else {
+        //             // Find actual wrapped angle between limit and joint
+        //             double diffangle = fmod(q_min(j)-q_curr(j),2*M_PI);
+        //             // Subtract that angle from limit and go into the range by a
+        //             // revolution
+        //             double curr_angle = q_min(j) - diffangle + 2*M_PI;
+        //             if (curr_angle > q_max(j)){
+        //                 return -3;
+        //                 q_curr(j) = q_min(j);
+        //             }
+        //             else
+        //                 q_curr(j) = curr_angle;
+        //         }
+        //     if (types[j]==yeebot::BasicJointType::Continuous)
+        //         continue;
+            
+        // }
+      
+        // for(unsigned int j=0; j<q_max.data.size(); j++) {
+        //     if (types[j]==yeebot::BasicJointType::Continuous)
+        //         continue;
+
+        //     if(q_curr(j) > q_max(j)) 
+        //         if (!wrap || types[j]==yeebot::BasicJointType::TransJoint)
+        //             // KDL's default 
+        //             q_curr(j) = q_max(j);
+        //         else {
+        //             // Find actual wrapped angle between limit and joint
+        //             double diffangle = fmod(q_curr(j)-q_max(j),2*M_PI);
+        //             // Add that angle to limit and go into the range by a revolution
+        //             double curr_angle = q_max(j) + diffangle - 2*M_PI;
+        //             if (curr_angle < q_min(j)){
+        //                 return -3;
+        //                 q_curr(j) = q_max(j);
+        //             }
+        //             else
+        //             q_curr(j) = curr_angle;
+        //         }
+        // }
+
+        //project near
+        //revise for joint limit
+        for(unsigned int j=0; j<q_min.data.size(); j++) {
+            if(q_out(j) < q_min(j) || q_out(j)>q_max(j)) 
+                return -3;
+        }
+        iter_num--;
+    } while (iter_num>0);
     
     return -3;
 }

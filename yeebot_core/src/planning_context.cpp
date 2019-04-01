@@ -367,7 +367,7 @@ ompl::geometric::PathGeometric PlanningContext::getOmplPath(){
 void PlanningContext::getTrajectoryMsg(moveit_msgs::RobotTrajectory& robot_trajectory){
     trajectory_.getRobotTrajectoryMsg(robot_trajectory);
 }
-void PlanningContext::publishAxisLabeled(rviz_visual_tools::RvizVisualTools &visual_tools,Eigen::Isometry3d error_pose){
+void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_tools,bool lable,Eigen::Isometry3d error_pose){
     ompl::geometric::PathGeometric path=getOmplPath();
     unsigned int dim=space_->getDimension();
     for(std::size_t i=0;i<path.getStateCount();i++){
@@ -381,9 +381,56 @@ void PlanningContext::publishAxisLabeled(rviz_visual_tools::RvizVisualTools &vis
         }
         Eigen::Isometry3d path_pose;
         kine_kdl_->solveFK(path_pose,jnv);
-        visual_tools.publishAxisLabeled(error_pose*path_pose, std::to_string(i));
+        if(lable){
+            visual_tools.publishAxisLabeled(error_pose*path_pose, std::to_string(i));
+        }
+        else
+        {
+            visual_tools.publishAxis(error_pose*path_pose);   
+        }
+        
         visual_tools.trigger();
     }
+
+}
+double PlanningContext::getPathCost(){
+    ompl::geometric::PathGeometric path=getOmplPath();
+    double cost=0;
+    std::vector<ompl::base::State *> &states =path.getStates();
+    int size=states.size();
+    for(int i=0;i<size-1;i++){
+        cost+=si_->distance(states[i],states[i+1]);
+    }
+    return cost;
+}
+void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color,Eigen::Isometry3d error_pose){
+    ompl::geometric::PathGeometric path=getOmplPath();
+    unsigned int dim=space_->getDimension();
+    std::vector<geometry_msgs::Point> line;
+    for(std::size_t i=0;i<path.getStateCount();i++){
+        Eigen::VectorXd jnv(dim);
+        for(int k=0;k<dim;k++){
+            if(plan_type_==PlanType::AXIS_PROJECT){
+                jnv[k]=path.getState(i)->as<ompl::base::ConstrainedStateSpace::StateType>()->getState()->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+            }else{
+                jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+            }
+        }
+        Eigen::Isometry3d path_pose;
+        kine_kdl_->solveFK(path_pose,jnv);
+        path_pose=error_pose*path_pose;
+        visual_tools.publishSphere(path_pose,color,rviz_visual_tools::SMALL);
+        geometry_msgs::Point point1;
+        point1.x=path_pose.translation().x();
+        point1.y=path_pose.translation().y();
+        point1.z=path_pose.translation().z();
+
+        line.push_back(point1);
+    }
+    const double radius=0.005;
+    visual_tools.publishPath(line,color,radius);
+    visual_tools.trigger();
+
 }
 
 void PlanningContext::registerProjections(ompl::base::StateSpacePtr& space){

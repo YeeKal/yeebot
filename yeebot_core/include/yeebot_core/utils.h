@@ -19,6 +19,7 @@
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <rviz_visual_tools/rviz_visual_tools.h>
+#include <eigen_conversions/eigen_msg.h>
 
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/mesh_operations.h>

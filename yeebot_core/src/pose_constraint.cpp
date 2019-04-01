@@ -63,6 +63,9 @@ bool PoseConstraint::project(Eigen::Ref<Eigen::VectorXd> x)const{
             }
             return true;
         }
+        // if(!kine_kdl_->axisProjectLocal(ref_pose_,invalid_vector_,x,x)){
+        // return false;
+        // }
     }
     return true;
 }
@@ -75,6 +78,12 @@ bool PoseConstraint::projectNotlocal(Eigen::Ref<Eigen::VectorXd> x)const{
     if(!kine_kdl_->tlpProjectNotlocal(ref_pose_,x,x)){
         return false;
     }
+    // if(!kine_kdl_->axisProjectLocal(ref_pose_,invalid_vector_,x,x)){//for us
+    //     return false;
+    // }
+    // if(!kine_kdl_->optpProjectNotlocal(ref_pose_,x,x)){//for us
+    //     return false;
+    // }
     return true;
 }
 // bool PoseConstraint::trackProject(Eigen::Ref<Eigen::VectorXd> x){

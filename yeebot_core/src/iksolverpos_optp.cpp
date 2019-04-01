@@ -58,8 +58,12 @@ invalid_axis_(invalid_axis)
     opt.set_xtol_abs(tolerance[0]);
 
     optp = nlopt::opt(nlopt::LD_SLSQP, _chain.getNrOfJoints());
-    std::vector<double> tolerancep(1,boost::math::tools::epsilon<float>());
-    optp.set_xtol_abs(tolerancep[0]);
+    std::vector<double> tolerancep(1,eps*eps);
+    //optp.set_xtol_abs(tolerancep[0]);
+    optp.set_xtol_abs(1e-3);
+
+    optp.set_lower_bounds(lb);
+    optp.set_upper_bounds(ub);
 
 
     switch (TYPE) {
@@ -230,6 +234,47 @@ int IkSolverPosOPTP::project(const KDL::JntArray& q_in, const KDL::Frame& m_in, 
     }
            
 
+    for (uint i=0; i < x.size(); i++) {
+      q_out(i) = best_x[i];
+    }
+    //progress: solve state
+    //aborted: termination control
+    return progress;
+}
+int IkSolverPosOPTP::projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out,
+                const KDL::Twist _bounds,const KDL::JntArray& q_desired){
+
+    bounds = _bounds;
+    q_out=q_in;
+
+
+    optp.set_maxtime(maxtime);
+
+
+    double minf; /* the minimum objective value, upon return */
+
+    targetPose = m_in;
+
+    std::vector<double> x(chain.getNrOfJoints());
+    //joint limit
+    for (uint i=0; i < x.size(); i++) {
+        x[i] = q_in(i);
+    }
+    
+    best_x=x;
+    progress = -3;
+
+    //adjust the joint limits
+
+    
+    try {
+      optp.optimize(x, minf);
+    } catch (...) {
+    }
+    
+    if (progress == -1) // Got NaNs
+      return -3;
+           
     for (uint i=0; i < x.size(); i++) {
       q_out(i) = best_x[i];
     }

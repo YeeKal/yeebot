@@ -51,6 +51,9 @@ public:
     bool tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
+    bool optpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out);
     /**
      * @brief project joint values according to 6 axis: x y z r p y
      * @ref_pose reference homogeneous coordinates
@@ -59,6 +62,11 @@ public:
      * @joint_out result joint values
      */
     bool axisProject(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXd> &joint_in,
+                     Eigen::Ref<Eigen::VectorXd> joint_out
+                     )const;
+    bool axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &joint_in,
                      Eigen::Ref<Eigen::VectorXd> joint_out

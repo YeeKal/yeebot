@@ -254,6 +254,22 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
+     bool KineKdl::optpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out)
+    {   
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+        iksolver_trackp_->solver_optp->reset();
+        int error_status=iksolver_trackp_->solver_optp->projectNotlocal(kdl_jnt_in,kdl_ref_pose,kdl_jnt_out,KDL::Twist::Zero());
+        if(error_status<0)
+            return getError(-3);
+        //iksolver_trackp_->normalize_seed(kdl_jnt_in,kdl_jnt_out);
+        KDL2Eigen(kdl_jnt_out,jnt_out);
+        return getError(error_status);
+    }
     bool KineKdl::tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
@@ -325,6 +341,77 @@ namespace yeebot{
             for(unsigned int k=0;k<joint_num_;k++){
                 if(kdl_jnt_out(k)<joint_limits_(k,0) || kdl_jnt_out(k)>joint_limits_(k,1) ){
                     kdl_jnt_out(k)=0;//0 is valid as default
+                }
+            }
+    
+        }//end for
+        //return getError(KDL::SolverI::E_MAX_ITERATIONS_EXCEEDED );
+        //std::cout<<twist_error<<std::endl;
+        return getError(-5);
+        
+    }
+
+    //for test
+    bool KineKdl::axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
+                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
+                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
+    {   
+        //convert eigen to kdl
+        KDL::Frame kdl_ref_pose;
+        KDL::JntArray kdl_jnt_in(joint_num_);
+        KDL::Vector invalid_xyz,invalid_rpy;
+        Eigen2KDL(ref_pose,kdl_ref_pose);
+        Eigen2KDL(jnt_in,kdl_jnt_in);
+        Eigen2KDL(invalid_axis.head(3),invalid_xyz);
+        Eigen2KDL(invalid_axis.tail(3),invalid_rpy);
+        
+        //pre-declaration frequently used variables 
+        KDL::Frame kdl_new_pose;
+        KDL::Twist delta_twist;
+        KDL::JntArray delta_jnt(joint_num_);
+
+        KDL::JntArray kdl_jnt_out(joint_num_);
+        kdl_jnt_out=kdl_jnt_in;
+        int error_status;
+        double twist_error;
+        for(unsigned int i=0;i<max_iter_;i++){
+            
+            //fk to get new pose
+            if(error_status=fksolver_->JntToCart(kdl_jnt_out,kdl_new_pose)<KDL::SolverI::E_NOERROR){
+                return getError(error_status);
+            }
+            //differentiate of the frame 
+            delta_twist=KDL::Twist(eleMulti(KDL::diff(kdl_ref_pose.p,kdl_new_pose.p),invalid_xyz),  
+                                   eleMulti(KDL::diff(kdl_ref_pose.M,kdl_new_pose.M),invalid_rpy));
+            //std::cout<<"delta twist:"<<delta_twist(0)<<" "<<delta_twist(1)<<" "<<delta_twist(2)<<" "<<delta_twist(3)<<" "<<delta_twist(4)<<" "<<delta_twist(5)<<std::endl;
+            //calc error  
+            twist_error=0;
+            for(int i=0;i<6;i++){
+                twist_error +=delta_twist[i]*delta_twist[i];
+            }
+            //std::cout<<"error:"<<twist_error<<std::endl;
+            if(KDL::Equal(delta_twist,KDL::Twist::Zero(),project_error_)){
+                KDL2Eigen(kdl_jnt_out,jnt_out);
+                //std::cout<<"jnt out:\n"<<jnt_out<<std::endl;
+                return getError((error_status>KDL::SolverI::E_NOERROR ? KDL::SolverI::E_DEGRADED : KDL::SolverI::E_NOERROR));
+            }
+
+            //presudoinverse of jacobian to get delta joint values 
+            if(error_status=iksolver_vel_->CartToJnt(kdl_jnt_out,delta_twist,delta_jnt)<KDL::SolverI::E_NOERROR){
+                std::cout<<"vel"<<std::endl;
+                return getError(error_status);
+            }
+
+            KDL::Subtract(kdl_jnt_out,delta_jnt,kdl_jnt_out);
+            if(delta_jnt.data.isZero(boost::math::tools::epsilon<float>())){
+                //return getError(-3);
+            }
+
+            for(unsigned int k=0;k<joint_num_;k++){
+                if(kdl_jnt_out(k)<joint_limits_(k,0) || kdl_jnt_out(k)>joint_limits_(k,1) ){
+                    //kdl_jnt_out(k)=0;//0 is valid as default
+                    return getError(-3);
                 }
             }
     

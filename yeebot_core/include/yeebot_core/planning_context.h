@@ -115,7 +115,8 @@ public:
 
     void getTrajectoryMsg(moveit_msgs::RobotTrajectory& robot_trajectory);
 
-    void publishAxisLabeled(rviz_visual_tools::RvizVisualTools& visual_tools,Eigen::Isometry3d error_pose=Eigen::Isometry3d::Identity());
+    void publishAxis(rviz_visual_tools::RvizVisualTools& visual_tools,bool lable=true,Eigen::Isometry3d error_pose=Eigen::Isometry3d::Identity());
+    void publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color=rviz_visual_tools::GREEN,Eigen::Isometry3d error_pose=Eigen::Isometry3d::Identity());
 
     planning_scene::PlanningScenePtr& getPlanningScene(){
         return planning_scene_;
@@ -135,6 +136,8 @@ public:
     bool solveIK(const Eigen::Affine3d & eigen_pose,Eigen::VectorXd &joint_values,int max_attempts) const;
 
     bool solveIK(const geometry_msgs::Pose& pose,Eigen::VectorXd &joint_values,int max_attempts) const;
+
+    double getPathCost();
 
 };//end class planningcontext
 typedef std::shared_ptr<PlanningContext> PlanningContextPtr;

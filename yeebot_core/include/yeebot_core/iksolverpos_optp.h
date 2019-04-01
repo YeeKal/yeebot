@@ -34,6 +34,8 @@ public:
     void cartSumSquaredError(const std::vector<double>& x, double error[]);
     void cartDQError(const std::vector<double>& x, double error[]);
     void cartL2NormError(const std::vector<double>& x, double error[]);
+    int projectNotlocal(const KDL::JntArray& q_in, const KDL::Frame& m_in, KDL::JntArray& q_out,
+                const KDL::Twist _bounds,const KDL::JntArray& q_desired=KDL::JntArray());
 
     inline void setMaxtime(double t) { maxtime = t; }
 
