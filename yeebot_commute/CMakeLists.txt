@@ -3,8 +3,9 @@ project(yeebot_commute)
 
 add_compile_options(-std=c++11)
 
-set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -g ")
-set (CMAKE_VERBOSE_MAKEFILE ON)
+#debug
+#set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -g ")
+#set (CMAKE_VERBOSE_MAKEFILE ON)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
