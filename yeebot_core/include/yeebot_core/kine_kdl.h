@@ -135,7 +135,7 @@ public:
     IkSolverPosTrackPPtr iksolver_trackp_;
     //TRAC_IK::TRAC_IK ik_track;
 
-private:
+//private:
     int max_iter_;     // max iteration for ik and axis project
     unsigned int link_num_;
     unsigned int joint_num_;

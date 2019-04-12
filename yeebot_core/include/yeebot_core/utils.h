@@ -158,6 +158,10 @@ inline void Eigen2KDL(const Eigen::Ref<const Eigen::Matrix3d>& e, KDL::Rotation&
     }
 }
 
+// KDL::Vector eleMulti(const KDL::Vector &vec1,const KDL::Vector &vec2){
+//         return KDL::Vector(vec1.data[0]*vec2.data[0],vec1.data[1]*vec2.data[1],vec1.data[2]*vec2.data[2]);
+// }
+
 }//end namespace yeebot
 
 

@@ -1,12 +1,14 @@
 #include <ompl/base/spaces/constraint/ProjectedStateSpace.h>
 #include "yeebot_core/pose_constraint.h"
+#include "yeebot_core/dual_arm/pose_constraint_dual.h"
 namespace ompl{
     namespace base{
         class YeeProjectedStateSpace: public ProjectedStateSpace{
         public:
             double maxStep_;
-            YeeProjectedStateSpace(const StateSpacePtr &ambientSpace, const ConstraintPtr &constraint)
-            :ProjectedStateSpace(ambientSpace,constraint)
+            bool is_chain_;
+            YeeProjectedStateSpace(const StateSpacePtr &ambientSpace, const ConstraintPtr &constraint,bool is_chain=true)
+            :ProjectedStateSpace(ambientSpace,constraint),is_chain_(is_chain)
             {
                 setName("Yee" + space_->getName());
                 maxStep_=0.05*getMaximumExtent();
@@ -53,10 +55,17 @@ namespace ompl{
                     WrapperStateSpace::interpolate(previous, to, delta_ / dist, scratch);
             
                     // Project new state onto constraint manifold
-                    if (!dynamic_cast<yeebot::PoseConstraint *>(constraint_.get())->projectNotlocal(scratch)                  // not on manifold
-                        || !(svc->isValid(scratch))      // not valid
-                        || (step = distance(previous, scratch)) > lambda_ * delta_ || step<0.1*delta_)  // deviated
-                        break;
+                    if(is_chain_)
+                        if (!dynamic_cast<yeebot::PoseConstraint *>(constraint_.get())->projectNotlocal(scratch)                  // not on manifold
+                            || !(svc->isValid(scratch))      // not valid
+                            || (step = distance(previous, scratch)) > lambda_ * delta_ || step<0.1*delta_)  // deviated
+                            break;
+                    else
+                        if (!dynamic_cast<yeebot::PoseConstraintDual *>(constraint_.get())->projectNotlocal(scratch)                  // not on manifold
+                            || !(svc->isValid(scratch))      // not valid
+                            || (step = distance(previous, scratch)) > lambda_ * delta_ || step<0.1*delta_)  // deviated
+                            break;
+
             
                     // Check if we have wandered too far
                     total += step;

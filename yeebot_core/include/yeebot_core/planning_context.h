@@ -19,7 +19,9 @@
 
 //ros
 #include "yeebot_core/kine_kdl.h"
+#include "yeebot_core/dual_arm/kine_dual.h"
 #include "yeebot_core/pose_constraint.h"
+#include "yeebot_core/dual_arm/pose_constraint_dual.h"
 #include "yeebot_core/yeeprojectedstatespace.h"
 #include "yeebot_core/planning_manager.h"
 
@@ -52,6 +54,8 @@ protected:
 public:
     //key member should also be public
     KineKdlPtr kine_kdl_;
+    KineDualPtr kine_dual_;
+    bool is_chain_;
     ompl::base::StateSpacePtr space_;
     ompl::base::SpaceInformationPtr si_;
     ompl::geometric::SimpleSetupPtr ss_;

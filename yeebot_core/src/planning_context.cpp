@@ -87,7 +87,14 @@ trajectory_(robot_trajectory::RobotTrajectory(pm->robot_model_,pm->group_name_))
  */
 {   
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(pm_->group_name_);
-    kine_kdl_.reset(new yeebot::KineKdl(pm_->chain_,pm_->urdf_model_,100,spec_.invalid_vector_,spec_.project_error_,spec_.ik_error_));
+    if(jmg->isChain())
+        is_chain_=true;
+    else    
+        is_chain_=false;
+    if(is_chain_ )
+        kine_kdl_.reset(new yeebot::KineKdl(pm_->chain_,pm_->urdf_model_,100,spec_.invalid_vector_,spec_.project_error_,spec_.ik_error_));
+    else
+        kine_dual_.reset(new yeebot::KineDual(pm_->chains_,pm_->urdf_model_,100,spec_.invalid_vector_,spec_.project_error_,spec_.ik_error_));
      //model state space
     ompl_interface::ModelBasedStateSpaceSpecification model_ss_spec(robot_model_, jmg);
     ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
@@ -99,12 +106,22 @@ trajectory_(robot_trajectory::RobotTrajectory(pm->robot_model_,pm->group_name_))
         si_.reset(new ompl::base::SpaceInformation(space_));
     }
     else if(plan_type_==PlanType::AXIS_PROJECT){
-        yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_,spec_.project_error_));
-        constraint->setRefPose(spec_.ref_pose_);
-        // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
-        // registerProjections(model_state_space);
-        space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
-        si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
+        if(is_chain_){
+            yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_,spec_.project_error_));
+            constraint->setRefPose(spec_.ref_pose_);
+            // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
+            // registerProjections(model_state_space);
+            space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
+            si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
+        }
+        else{
+            yeebot::PoseConstraintDualPtr constraint( new yeebot::PoseConstraintDual(spec_.invalid_vector_,kine_dual_,spec_.project_error_));
+            constraint->setRefPose(spec_.ref_pose_);
+            // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
+            // registerProjections(model_state_space);
+            space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint,is_chain_));
+            si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
+        }
         
     }
     else{
@@ -131,20 +148,24 @@ void PlanningContext::updatePlanningSpace(ompl::base::StateSpacePtr model_state_
             break;
         case PlanType::AXIS_PROJECT:
             {   
-                std::cout<<"project state space\n";
                 //use {} when you create a new variable in switch-case
                 //else error occurs:jump to case label [-fpermissive]
-                yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_));
-                constraint->setRefPose(spec_.ref_pose_);
-                std::cout<<"init space:"<<model_state_space->getName().c_str()<<std::endl;
-                ompl::base::YeeProjectedStateSpacePtr projected_space(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
-                std::cout<<"init space:"<<projected_space->getName().c_str()<<std::endl;
-                space_=projected_space;
-                //space_=std::make_shared< ompl::base::ProjectedStateSpace>(model_state_space,constraint);
-
-                si_=std::make_shared<ompl::base::ConstrainedSpaceInformation>(space_);
-                space_->setup();
-                std::cout<<"init space:"<<space_->getName().c_str()<<std::endl;
+                if(is_chain_){
+                    yeebot::PoseConstraintPtr constraint( new yeebot::PoseConstraint(spec_.invalid_vector_,kine_kdl_,spec_.project_error_));
+                    constraint->setRefPose(spec_.ref_pose_);
+                    // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
+                    // registerProjections(model_state_space);
+                    space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint));
+                    si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
+                }
+                else{
+                    yeebot::PoseConstraintDualPtr constraint( new yeebot::PoseConstraintDual(spec_.invalid_vector_,kine_dual_,spec_.project_error_));
+                    constraint->setRefPose(spec_.ref_pose_);
+                    // ompl::base::StateSpacePtr  model_state_space(new ompl_interface::ModelBasedStateSpace(model_ss_spec));
+                    // registerProjections(model_state_space);
+                    space_.reset(new ompl::base::YeeProjectedStateSpace(model_state_space,constraint,is_chain_));
+                    si_.reset(new ompl::base::ConstrainedSpaceInformation(space_));
+                }
                 //
             }
             break;
@@ -379,14 +400,32 @@ void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_too
                 jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
             }
         }
-        Eigen::Isometry3d path_pose;
-        kine_kdl_->solveFK(path_pose,jnv);
-        if(lable){
-            visual_tools.publishAxisLabeled(error_pose*path_pose, std::to_string(i));
+        
+        if(is_chain_){
+            Eigen::Isometry3d path_pose;
+            kine_kdl_->solveFK(path_pose,jnv);
+            if(lable){
+                visual_tools.publishAxisLabeled(error_pose*path_pose, std::to_string(i));
+            }
+            else
+            {
+                visual_tools.publishAxis(error_pose*path_pose);   
+            }
         }
-        else
-        {
-            visual_tools.publishAxis(error_pose*path_pose);   
+        else{   
+            Eigen::Isometry3d path_pose1,path_pose2;
+            kine_dual_->kines_[0]->solveFK(path_pose1,jnv.head(kine_dual_->kines_[0]->getJointsNum()));
+            kine_dual_->kines_[1]->solveFK(path_pose2,jnv.tail(kine_dual_->kines_[1]->getJointsNum()));
+            if(lable){
+                visual_tools.publishAxisLabeled(error_pose*path_pose1,"0-"+std::to_string(i));
+                visual_tools.publishAxisLabeled(error_pose*path_pose2,"1-"+std::to_string(i));
+            }
+            else
+            {
+                visual_tools.publishAxis(error_pose*path_pose1);  
+                visual_tools.publishAxis(error_pose*path_pose2);  
+            }
+        
         }
         
         visual_tools.trigger();
@@ -406,30 +445,65 @@ double PlanningContext::getPathCost(){
 void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color,Eigen::Isometry3d error_pose){
     ompl::geometric::PathGeometric path=getOmplPath();
     unsigned int dim=space_->getDimension();
-    std::vector<geometry_msgs::Point> line;
-    for(std::size_t i=0;i<path.getStateCount();i++){
-        Eigen::VectorXd jnv(dim);
-        for(int k=0;k<dim;k++){
-            if(plan_type_==PlanType::AXIS_PROJECT){
-                jnv[k]=path.getState(i)->as<ompl::base::ConstrainedStateSpace::StateType>()->getState()->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
-            }else{
-                jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+    
+    if(is_chain_){
+        std::vector<geometry_msgs::Point> line;
+        for(std::size_t i=0;i<path.getStateCount();i++){
+            Eigen::VectorXd jnv(dim);
+            for(int k=0;k<dim;k++){
+                if(plan_type_==PlanType::AXIS_PROJECT){
+                    jnv[k]=path.getState(i)->as<ompl::base::ConstrainedStateSpace::StateType>()->getState()->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+                }else{
+                    jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+                }
             }
-        }
-        Eigen::Isometry3d path_pose;
-        kine_kdl_->solveFK(path_pose,jnv);
-        path_pose=error_pose*path_pose;
-        visual_tools.publishSphere(path_pose,color,rviz_visual_tools::SMALL);
-        geometry_msgs::Point point1;
-        point1.x=path_pose.translation().x();
-        point1.y=path_pose.translation().y();
-        point1.z=path_pose.translation().z();
+            Eigen::Isometry3d path_pose;
+            kine_kdl_->solveFK(path_pose,jnv);
+            path_pose=error_pose*path_pose;
+            visual_tools.publishSphere(path_pose,color,rviz_visual_tools::SMALL);
+            geometry_msgs::Point point1;
+            point1.x=path_pose.translation().x();
+            point1.y=path_pose.translation().y();
+            point1.z=path_pose.translation().z();
 
-        line.push_back(point1);
+            line.push_back(point1);
+        }
+        const double radius=0.005;
+        visual_tools.publishPath(line,color,radius);
+        visual_tools.trigger();
     }
-    const double radius=0.005;
-    visual_tools.publishPath(line,color,radius);
-    visual_tools.trigger();
+    else{
+        std::vector<geometry_msgs::Point> line1,line2;
+        for(std::size_t i=0;i<path.getStateCount();i++){
+            Eigen::VectorXd jnv(dim);
+            for(int k=0;k<dim;k++){
+                if(plan_type_==PlanType::AXIS_PROJECT){
+                    jnv[k]=path.getState(i)->as<ompl::base::ConstrainedStateSpace::StateType>()->getState()->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+                }else{
+                    jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
+                }
+            }
+            Eigen::Isometry3d path_pose1,path_pose2;
+            kine_dual_->kines_[0]->solveFK(path_pose1,jnv.head(kine_dual_->kines_[0]->getJointsNum()));
+            kine_dual_->kines_[1]->solveFK(path_pose2,jnv.tail(kine_dual_->kines_[1]->getJointsNum()));
+            visual_tools.publishSphere(error_pose*path_pose1,color,rviz_visual_tools::SMALL);
+            visual_tools.publishSphere(error_pose*path_pose2,color,rviz_visual_tools::SMALL);
+            geometry_msgs::Point point1,point2;
+            point1.x=path_pose1.translation().x();
+            point1.y=path_pose1.translation().y();
+            point1.z=path_pose1.translation().z();
+            point2.x=path_pose2.translation().x();
+            point2.y=path_pose2.translation().y();
+            point2.z=path_pose2.translation().z();
+
+            line1.push_back(point1);
+            line2.push_back(point2);
+        }
+        const double radius=0.005;
+        visual_tools.publishPath(line1,color,radius);
+        visual_tools.publishPath(line2,color,radius);
+        visual_tools.trigger();
+    }
 
 }
 

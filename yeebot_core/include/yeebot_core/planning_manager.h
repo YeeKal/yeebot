@@ -39,6 +39,7 @@ public:
                     );
 	~PlanningManager(){}
     void initializeKine();
+    KDL::Chain getChain(const robot_state::JointModelGroup* jmg);
     void initializeMoveClient();
     bool execute(const moveit_msgs::RobotTrajectory& robot_trajectory,bool wait=true);
     bool moveitPlan(Eigen::VectorXd& jnv,moveit_msgs::RobotTrajectory& robot_trajectory);
@@ -57,6 +58,7 @@ public:
     std::string base_name_;   //base frame of the chain
     std::string tip_name_;     //tip frame of the chain
     KDL::Chain chain_;
+    std::vector<KDL::Chain> chains_; //only for multi chains
     KDL::Tree tree_;
     //
     bool use_moveit_;

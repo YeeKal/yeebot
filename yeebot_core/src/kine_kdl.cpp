@@ -232,7 +232,7 @@ namespace yeebot{
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
     {   
         KDL::Frame kdl_ref_pose;
-        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);;
+        KDL::JntArray kdl_jnt_in(joint_num_),kdl_jnt_out(joint_num_);
         Eigen2KDL(ref_pose,kdl_ref_pose);
         Eigen2KDL(jnt_in,kdl_jnt_in);
         iksolver_trackp_->solver_optp->reset();

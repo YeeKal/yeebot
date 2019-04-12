@@ -48,14 +48,25 @@ void PlanningManager::initializeMoveClient(){
 //initialize parameters for kine class 
 void PlanningManager::initializeKine(){
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(group_name_);
-    base_name_=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
-    tip_name_=jmg->getLinkModelNames().back();
-
     urdf_model_.initParam(robot_description_);
     if(!kdl_parser::treeFromUrdfModel(urdf_model_,tree_)){
         std::cout<<"error!failed to initialize kdl tree from urdf model."<<std::endl;
     }
-    tree_.getChain(base_name_,tip_name_,chain_);
+    if(jmg->isChain())//single chain
+        chain_=getChain(jmg);
+    else{   //multi chains, the default for now is two arms
+        std::vector<const robot_state::JointModelGroup*> sub_groups;
+        jmg->getSubgroups(sub_groups);
+        chains_.push_back(getChain(sub_groups[0]));
+        chains_.push_back(getChain(sub_groups[1]));
+    }
+}
+KDL::Chain PlanningManager::getChain(const robot_state::JointModelGroup* jmg){
+    std::string base_name=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
+    std::string tip_name=jmg->getLinkModelNames().back();
+    KDL::Chain chain;
+    tree_.getChain(base_name,tip_name,chain);
+    return chain;
 }
 
 bool PlanningManager::execute(const moveit_msgs::RobotTrajectory& robot_trajectory,bool wait){
