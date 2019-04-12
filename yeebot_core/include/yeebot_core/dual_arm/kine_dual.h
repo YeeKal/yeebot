@@ -24,14 +24,23 @@ public:
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
-    bool optpProject(const Eigen::Isometry3d& ref_pose, 
-                    const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
-                    const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
-                    Eigen::Ref<Eigen::VectorXd> jnt_out)const;
     bool axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
+    bool plainProject(const Eigen::Isometry3d& ref_pose, 
+                    const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
+                    const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                    Eigen::Ref<Eigen::VectorXd> jnt_out) const;
+    bool optpProject(const Eigen::Isometry3d& ref_pose, 
+                    const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
+                    const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                    Eigen::Ref<Eigen::VectorXd> jnt_out)const;
+    bool optpProjectLocal(const Eigen::Isometry3d& ref_pose, 
+                    const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
+                    const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
+                    Eigen::Ref<Eigen::VectorXd> jnt_out) const;
+    
     KDL::Vector diffLocal(const KDL::Rotation& R_a_b1,const KDL::Rotation& R_a_b2,double dt=1.0) const;
     KDL::Vector eleMulti(const KDL::Vector &vec1,const KDL::Vector &vec2)const;
     bool getError(const int error_status) const;

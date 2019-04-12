@@ -50,6 +50,9 @@ bool PoseConstraintDual::project(Eigen::Ref<Eigen::VectorXd> x)const{
     if(! kine_dual_->optpProject(ref_pose_,invalid_vector_,x,x)){
         return false;
     }
+    // if(! kine_dual_->axisProject(ref_pose_,invalid_vector_,x,x)){
+    //     return false;
+    // }
     return true;
 }
 //project state
@@ -58,9 +61,12 @@ bool PoseConstraintDual::projectNotlocal(ompl::base::State *state) const{
 }
 //project near
 bool PoseConstraintDual::projectNotlocal(Eigen::Ref<Eigen::VectorXd> x)const{
-    if(! kine_dual_->optpProject(ref_pose_,invalid_vector_,x,x)){
+    if(! kine_dual_->optpProjectLocal(ref_pose_,invalid_vector_,x,x)){
         return false;
     }
+    // if(! kine_dual_->axisProject(ref_pose_,invalid_vector_,x,x)){
+    //     return false;
+    // }
     return true;
 }
 

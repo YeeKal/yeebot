@@ -18,6 +18,8 @@ public:
 		* @brief project joint values according to 6 axis: x y z r p y
 		*/ 
 	int project( const KDL::Frame& m_in,const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,const KDL::JntArray& q_in, KDL::JntArray& q_out);
+	int projectLocal( const KDL::Frame& m_in,const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,const KDL::JntArray& q_in, KDL::JntArray& q_out);
+
 
 	void cartSumSquaredErrorP(const std::vector<double>& x, double error[]);
 

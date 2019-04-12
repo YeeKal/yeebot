@@ -190,6 +190,107 @@ int OptpClosure::project( const KDL::Frame& m_in,const Eigen::Ref<const Eigen::V
     //aborted: termination control
     return progress;
 }
+int OptpClosure::projectLocal( const KDL::Frame& m_in,const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,const KDL::JntArray& q_in, KDL::JntArray& q_out){
+
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration diff;
+
+    q_out=q_in;
+    frame_rto1 = m_in;
+    invalid_axis_=invalid_axis;
+    
+    Eigen2KDL(invalid_axis.head(3),invalid_xyz_);
+    Eigen2KDL(invalid_axis.tail(3),invalid_rpy_);
+
+    optp.set_maxtime(maxtime);
+
+
+    double minf; /* the minimum objective value, upon return */
+
+    std::vector<double> x(dim1+dim2);
+    //joint limit
+    for (uint i=0; i < x.size(); i++) {
+        x[i] = q_in(i);
+        
+        // if (types[i]==BasicJointType::Continuous)
+        //     continue;
+
+        // if (types[i]==BasicJointType::TransJoint) {
+        //     x[i] = std::min(x[i],ub[i]);
+        //     x[i] = std::max(x[i],lb[i]);
+        // }
+        // else {
+            
+        //     // Below is to handle bad seeds outside of limits
+            
+        //     if (x[i] > ub[i]) {
+        //     //Find actual angle offset
+        //     double diffangle = fmod(x[i]-ub[i],2*M_PI);
+        //     // Add that to upper bound and go back a full rotation
+        //     x[i] = ub[i] + diffangle - 2*M_PI;
+        //     }
+            
+        //     if (x[i] < lb[i]) {
+        //     //Find actual angle offset
+        //     double diffangle = fmod(lb[i]-x[i],2*M_PI);
+        //     // Subtract that from lower bound and go forward a full rotation
+        //     x[i] = lb[i] - diffangle + 2*M_PI;
+        //     }        
+            
+        //     if (x[i] > ub[i]) 
+        //     x[i] = (ub[i]+lb[i])/2.0;
+        // }
+    }
+    
+    best_x=x;
+    progress = -3;
+
+    //adjust the joint limits
+    // std::vector<double> artificial_lower_limits(lb.size());
+
+    // for (uint i=0; i< lb.size(); i++)
+    //     if (types[i]==BasicJointType::Continuous) 
+    //         artificial_lower_limits[i] = best_x[i]-2*M_PI;
+    //     else if (types[i]==BasicJointType::TransJoint) 
+    //         artificial_lower_limits[i] = lb[i];
+    //     else
+    //         artificial_lower_limits[i] = std::max(lb[i],best_x[i]-2*M_PI);
+    
+    // optp.set_lower_bounds(artificial_lower_limits);
+
+    // std::vector<double> artificial_upper_limits(lb.size());
+
+    // for (uint i=0; i< ub.size(); i++)
+    //     if (types[i]==BasicJointType::Continuous) 
+    //         artificial_upper_limits[i] = best_x[i]+2*M_PI;
+    //     else if (types[i]==BasicJointType::TransJoint) 
+    //         artificial_upper_limits[i] = ub[i];
+    //     else
+    //         artificial_upper_limits[i] = std::min(ub[i],best_x[i]+2*M_PI);
+    
+    // optp.set_upper_bounds(artificial_upper_limits);
+    
+    try {
+      optp.optimize(x, minf);
+    } catch (...) {
+    }
+    
+    if (progress == -1) // Got NaNs
+      progress = -3;
+        
+    //has failed
+    if (progress < 0) {
+        return progress;
+    }
+           
+    for (uint i=0; i < x.size(); i++) {
+      q_out(i) = best_x[i];
+    }
+    //normalize_seed(q_in,q_out);//adjust jnt value
+    //progress: solve state
+    //aborted: termination control
+    return progress;
+}
 void OptpClosure::normalize_seed(const KDL::JntArray& seed, KDL::JntArray& solution) {
     // Make sure rotational joint values are within 1 revolution of seed; then
     // ensure joint limits are met.

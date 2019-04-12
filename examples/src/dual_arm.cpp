@@ -31,7 +31,7 @@ int main(int argc,char **argv){
     double time_plan_project=10;
     double seg_factor=0.2;//step size
     double delta_factor=0.02;
-    int iter_num=1;
+    int iter_num=0;
     unsigned int dim=14;
 
     if(argc==4){
@@ -83,11 +83,14 @@ int main(int argc,char **argv){
     Eigen::VectorXd ref_jnv(dim),jnv1(dim),jnv2(dim);
     Eigen::Isometry3d pose1,pose2;
 
-    jnv1<<-0.753121, -0.33532, 2.89982, -0.698395,   2.93299,  0.402084, 2.90004,1.69132, 0.740147,0.58663,-0.322915 , 0.522957, -0.835548,-1.46231;
-    //jnv2<<4.01836,-1.21812 ,-2.9223,-0.417688 ,2.02614,-0.293799,-1.49832, 2.32587,0.0393165 ,-1.33289 ,-0.241451, -0.0972999,-1.39481,0.394526;
- 
-    jnv2<<3.41495,  -0.123868, -1.91753, -0.464354, 0.194983, -0.990569, -0.0458806,  1.81432 ,1.12425, -0.480637,-0.273099, -1.03692,-0.56874,0.682944;
+    //jnv1<<-0.753121, -0.33532, 2.89982, -0.698395,   2.93299,  0.402084, 2.90004,1.69132, 0.740147,0.58663,-0.322915 , 0.522957, -0.835548,-1.46231;//down
+    //jnv2<<3.41495,  -0.123868, -1.91753, -0.464354, 0.194983, -0.990569, -0.0458806,  1.81432 ,1.12425, -0.480637,-0.273099, -1.03692,-0.56874,0.682944;//right
 
+    //jnv1<<4.01836,-1.21812 ,-2.9223,-0.417688 ,2.02614,-0.293799,-1.49832, 2.32587,0.0393165 ,-1.33289 ,-0.241451, -0.0972999,-1.39481,0.394526;//left
+    //jnv2<<3.41495,  -0.123868, -1.91753, -0.464354, 0.194983, -0.990569, -0.0458806,  1.81432 ,1.12425, -0.480637,-0.273099, -1.03692,-0.56874,0.682944;//right
+
+    jnv1<<4.2538,-1.32976,-2.75702, -0.222778,1.49657, -0.311092,-1.2878,  0.404481,  0.240521, 1.33799, -0.112667, -2.85933, 1.4513 , 0.957299;
+    jnv2<<3.55373, -0.483055 , -2.06244, -0.230711,  0.602476,-1.3995, -0.281545 ,0.479026,1.01328,  0.485986, -0.582673,-1.4243,0.12469, 0.30035;//right
     yeebot_commute::JointInfo joint_info;
     joint_info.request.dim=16;//for sda, 
     if(client.call(joint_info)){
@@ -124,6 +127,9 @@ int main(int argc,char **argv){
     yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
+    visual_tools.publishCube(0,  0.57,-0.26,1.20,  0.1,0.1,0.15);//add collision
+    visual_tools.trigger();
+    visual_tools.prompt("next");
 //move from ref to jnv1
     pn->setStartAndGoalStates(ref_jnv,jnv1);
     if(!pn->plan(time_plan_normal)){
@@ -141,6 +147,50 @@ int main(int argc,char **argv){
     display_trajectory.trajectory.clear();
     pn->ss_->clear();
 //move jnv1 jnv2
+//record
+if(iter_num>0){
+    double all_time=0;
+    double all_cost=0;
+    int success_time=0;
+    std::fstream out;
+    out.open("sda_optp3_"+std::to_string(iter_num)+".txt",std::ios::out);
+    if (!out.is_open()){
+        std::cout<<"failed to open file\n";
+    }
+for(int k=0;k<iter_num;k++){
+    
+    pp->setStartAndGoalStates(jnv1,jnv2);
+    //time_ik_start=ros::Time::now();
+    if(!pp->plan(time_plan_project)){
+        continue;
+    }
+    success_time++;
+    double cost=pp->getPathCost();
+    std::cout<<k<<":"<<pp->ss_->getLastPlanComputationTime()<<":"<<cost<<std::endl;
+    out<<success_time<<","<<pp->ss_->getLastPlanComputationTime()<<","<<cost<<std::endl;
+    all_time +=pp->ss_->getLastPlanComputationTime();
+    all_cost+=cost;
+    //time_ik_end=ros::Time::now();
+    //std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
+    // pp->getTrajectoryMsg(robot_trajectory);
+    // std::cout<<"points number:"<<robot_trajectory.joint_trajectory.points.size()<<std::endl;
+    // display_trajectory.trajectory.push_back(robot_trajectory);
+    // display_publisher.publish(display_trajectory);
+    // pp->publishTrajectoryLine(visual_tools,rviz_visual_tools::GREEN,error_pose);
+
+    // visual_tools.prompt("next");
+    // pm->execute(robot_trajectory,false);
+    // ROS_INFO("trajectory completed.");
+    
+    // display_trajectory.trajectory.clear();
+    pp->ss_->clear();
+}   
+    //out.seekg(std::ios::beg);
+    std::cout<<"avg time:"<<all_time/success_time<<"  avg cost:"<<all_cost/success_time<<std::endl;
+    out<<std::to_string(iter_num)<<":"<<success_time<<"\nsuccess rate:"<<(double)success_time/(double)(iter_num)<<"\navg time:"<<all_time/success_time<<"\navg cost:"<<all_cost/iter_num<<std::endl;
+    out.close();
+}
+//end record
     pp->setStartAndGoalStates(jnv1,jnv2);
     time_ik_start=ros::Time::now();
     if(!pp->plan(time_plan_project)){
@@ -177,9 +227,8 @@ int main(int argc,char **argv){
     display_trajectory.trajectory.clear();
     pn->ss_->clear();
 
-      
+    
     sleep(2.0);
-
     ros::shutdown();
     return 0;
 }
