@@ -235,7 +235,7 @@ namespace yeebot{
             std::cout<<"error:kin"<<error_status<<std::endl;
             return false;
         }
-        else if(error_status>0){
+        else if(error_status>=0){
             //std::cout<<"warning:"<<std::endl;
             return true;
         }

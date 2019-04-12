@@ -55,17 +55,18 @@ namespace ompl{
                     WrapperStateSpace::interpolate(previous, to, delta_ / dist, scratch);
             
                     // Project new state onto constraint manifold
-                    if(is_chain_)
+                    if(is_chain_){
                         if (!dynamic_cast<yeebot::PoseConstraint *>(constraint_.get())->projectNotlocal(scratch)                  // not on manifold
                             || !(svc->isValid(scratch))      // not valid
                             || (step = distance(previous, scratch)) > lambda_ * delta_ || step<0.1*delta_)  // deviated
                             break;
-                    else
+                    }
+                    else{//with or without the bracket
                         if (!dynamic_cast<yeebot::PoseConstraintDual *>(constraint_.get())->projectNotlocal(scratch)                  // not on manifold
                             || !(svc->isValid(scratch))      // not valid
                             || (step = distance(previous, scratch)) > lambda_ * delta_ || step<0.1*delta_)  // deviated
                             break;
-
+                    }
             
                     // Check if we have wandered too far
                     total += step;

@@ -1,4 +1,9 @@
 #include "yeebot_core/planning_manager.h"
+/* *
+remove move group
+the planning scene is common for every planner
+
+*/
 
 namespace yeebot{
 

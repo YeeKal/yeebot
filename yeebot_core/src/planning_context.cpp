@@ -374,9 +374,7 @@ void PlanningContext::computeTimeStamps(robot_trajectory::RobotTrajectory &traj)
     trajectory_processing::IterativeParabolicTimeParameterization time_parameterization;
     double velocity_factor=0.5;
     double acce_factor=0.5;
-    if(time_parameterization.computeTimeStamps(traj,velocity_factor,acce_factor)){
-        ROS_INFO("time stamps completed.");
-    }else{
+    if(! time_parameterization.computeTimeStamps(traj,velocity_factor,acce_factor)){
         ROS_INFO("error. time stamps failed.");
     }
 }
@@ -489,12 +487,12 @@ void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &
             visual_tools.publishSphere(error_pose*path_pose1,color,rviz_visual_tools::SMALL);
             visual_tools.publishSphere(error_pose*path_pose2,color,rviz_visual_tools::SMALL);
             geometry_msgs::Point point1,point2;
-            point1.x=path_pose1.translation().x();
-            point1.y=path_pose1.translation().y();
-            point1.z=path_pose1.translation().z();
-            point2.x=path_pose2.translation().x();
-            point2.y=path_pose2.translation().y();
-            point2.z=path_pose2.translation().z();
+            point1.x=(error_pose*path_pose1).translation().x();
+            point1.y=(error_pose*path_pose1).translation().y();
+            point1.z=(error_pose*path_pose1).translation().z();
+            point2.x=(error_pose*path_pose2).translation().x();
+            point2.y=(error_pose*path_pose2).translation().y();
+            point2.z=(error_pose*path_pose2).translation().z();
 
             line1.push_back(point1);
             line2.push_back(point2);

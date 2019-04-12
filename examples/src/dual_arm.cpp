@@ -83,6 +83,11 @@ int main(int argc,char **argv){
     Eigen::VectorXd ref_jnv(dim),jnv1(dim),jnv2(dim);
     Eigen::Isometry3d pose1,pose2;
 
+    jnv1<<-0.753121, -0.33532, 2.89982, -0.698395,   2.93299,  0.402084, 2.90004,1.69132, 0.740147,0.58663,-0.322915 , 0.522957, -0.835548,-1.46231;
+    //jnv2<<4.01836,-1.21812 ,-2.9223,-0.417688 ,2.02614,-0.293799,-1.49832, 2.32587,0.0393165 ,-1.33289 ,-0.241451, -0.0972999,-1.39481,0.394526;
+ 
+    jnv2<<3.41495,  -0.123868, -1.91753, -0.464354, 0.194983, -0.990569, -0.0458806,  1.81432 ,1.12425, -0.480637,-0.273099, -1.03692,-0.56874,0.682944;
+
     yeebot_commute::JointInfo joint_info;
     joint_info.request.dim=16;//for sda, 
     if(client.call(joint_info)){
@@ -92,94 +97,88 @@ int main(int argc,char **argv){
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name,true));
+    yeebot::PlanningContextPtr pn,pp;
+    pn.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::NORMAL));
+    pp.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::AXIS_PROJECT));
+    std::cout<<"project space delta_:"<<pp->space_->as<ompl::base::YeeProjectedStateSpace>()->getDelta()<<std::endl;
+    std::cout<<"maximum extent:"<<pp->space_->getMaximumExtent()<<std::endl;
+    pp->planner_->as<ompl::geometric::CBIRRT>()->setRange(pp->space_->getMaximumExtent()*seg_factor);
+    pp->space_->as<ompl::base::YeeProjectedStateSpace>()->setDelta(delta_factor*pp->space_->getMaximumExtent());
+    pp->space_->as<ompl::base::YeeProjectedStateSpace>()->setMaxStep(pp->space_->getMaximumExtent()*seg_factor);
+    pn->simply_time_=2;
+    pn->space_->setLongestValidSegmentFraction(0.005);
+
+    std::cout<<"planner range (project):"<<pp->planner_->as<ompl::geometric::RRTConnect>()->getRange()<<std::endl;
+    std::cout<<"project space delta_:"<<pp->space_->as<ompl::base::YeeProjectedStateSpace>()->getDelta()<<std::endl;
+    std::cout<<"space range:"<<pp->space_->as<ompl::base::YeeProjectedStateSpace>()->maxStep_<<std::endl;
+    std::cout<<"maximum extent:"<<pp->space_->getMaximumExtent()<<std::endl;
+
     robot_state::RobotStatePtr robot_state=pm->robot_state_;
+    ros::Publisher display_publisher 
+        =node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory;
+    robot_state::robotStateToRobotStateMsg(*robot_state, display_trajectory.trajectory_start);
+    display_trajectory.model_id="motoman_sda5f";
+    moveit_msgs::RobotTrajectory robot_trajectory;
 
     yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
-
-    
-
-    std::cout<<"h1\n";
-    yeebot::KineDualPtr kine_dual=std::make_shared<yeebot::KineDual>(pm->chains_,pm->urdf_model_,100,invalid_vector,1e-3,1e-6);
-    yeebot::PoseConstraintDualPtr pose_con=std::make_shared<yeebot::PoseConstraintDual> (invalid_vector,kine_dual);
-    pose_con->setRefPose(ref_pose);
-    std::cout<<"h2\n";
-    kine_dual->kines_[0]->solveFK(pose1,jnv1.head(kine_dual->kines_[0]->getJointsNum()));
-    if(kine_dual->axisProject(ref_pose,invalid_vector,ref_jnv,jnv1)){
-        if(kine_dual->kines_[1]->solveFK(pose2,jnv1.tail(kine_dual->kines_[1]->getJointsNum()))){
-            visual_tools.publishAxisLabeled(error_pose*pose2, "result");
-            visual_tools.trigger();
-        }
-        else
-            std::cout<<"fk solver failed\n";
+//move from ref to jnv1
+    pn->setStartAndGoalStates(ref_jnv,jnv1);
+    if(!pn->plan(time_plan_normal)){
+        ros::shutdown();
+        return 0;
     }
-    else{
-        std::cout<<"project solver failed\n";
+    //std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
+    pn->getTrajectoryMsg(robot_trajectory);
+    display_trajectory.trajectory.push_back(robot_trajectory);
+    //display_publisher.publish(display_trajectory);
+    //pc->publishAxisLabeled(visual_tools,error_pose);
+    //visual_tools.prompt("next");
+    pm->execute(robot_trajectory,false);
+    ROS_INFO("trajectory completed.");
+    display_trajectory.trajectory.clear();
+    pn->ss_->clear();
+//move jnv1 jnv2
+    pp->setStartAndGoalStates(jnv1,jnv2);
+    time_ik_start=ros::Time::now();
+    if(!pp->plan(time_plan_project)){
+        ros::shutdown();
+        return 0;
     }
-
-    if(kine_dual->kines_[1]->axisProject(ref_pose,invalid_vector,ref_jnv.tail(kine_dual->kines_[1]->getJointsNum()),jnv1.tail(kine_dual->kines_[1]->getJointsNum()))){
-        if(kine_dual->kines_[1]->solveFK(pose2,jnv1.tail(kine_dual->kines_[1]->getJointsNum()))){
-            visual_tools.publishAxisLabeled(error_pose*pose2, "result2");
-            visual_tools.trigger();
-        }
-        else
-            std::cout<<"fk solver failed\n";
+    time_ik_end=ros::Time::now();
+    std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
+    pp->getTrajectoryMsg(robot_trajectory);
+    std::cout<<"points number:"<<robot_trajectory.joint_trajectory.points.size()<<std::endl;
+    display_trajectory.trajectory.push_back(robot_trajectory);
+    display_publisher.publish(display_trajectory);
+    pp->publishTrajectoryLine(visual_tools,rviz_visual_tools::GREEN,error_pose);
+    visual_tools.prompt("next");
+    pm->execute(robot_trajectory,false);
+    visual_tools.prompt("next");
+    ROS_INFO("trajectory completed.");
+    display_trajectory.trajectory.clear();
+    pp->ss_->clear();
+//move jnv2 to jnv1
+    pn->setStartAndGoalStates(jnv2,jnv1);
+    if(!pn->plan(time_plan_normal)){
+        ros::shutdown();
+        return 0;
     }
-    else{
-        std::cout<<"kine kdl project solver failed\n";
-    }
+    //std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
+    pn->getTrajectoryMsg(robot_trajectory);
+    display_trajectory.trajectory.push_back(robot_trajectory);
+    //display_publisher.publish(display_trajectory);
+    //pc->publishAxisLabeled(visual_tools,error_pose);
+    //visual_tools.prompt("next");
+    pm->execute(robot_trajectory,false);
+    ROS_INFO("trajectory completed.");
+    display_trajectory.trajectory.clear();
+    pn->ss_->clear();
 
-    // if(kine_dual->optpProject(ref_pose,invalid_vector,ref_jnv,jnv1)){
-    //     kine_dual->kines_[1]->solveFK(pose2,jnv1.tail(kine_dual->kines_[1]->getJointsNum()));
-    //     kine_dual->kines_[0]->solveFK(pose1,jnv1.head(kine_dual->kines_[0]->getJointsNum()));
-    //     visual_tools.publishAxisLabeled(error_pose*pose2, "optp-2");
-    //     visual_tools.publishAxisLabeled(error_pose*pose1, "optp-1");
-
-    //     visual_tools.trigger();
-    //     std::cout<<"jnv1:"<<jnv1.transpose()<<std::endl;
-
-    // }
-    // else{
-    //     std::cout<<"optp project solver failed\n";
-    // }
-    jnv1=ref_jnv;
-    if(pose_con->project(jnv1)){
-        kine_dual->kines_[1]->solveFK(pose2,jnv1.tail(kine_dual->kines_[1]->getJointsNum()));
-        kine_dual->kines_[0]->solveFK(pose1,jnv1.head(kine_dual->kines_[0]->getJointsNum()));
-        visual_tools.publishAxisLabeled(error_pose*pose2, "pc-2");
-        visual_tools.publishAxisLabeled(error_pose*pose1, "pc-1");
-
-        visual_tools.trigger();
-        std::cout<<"jnv1:"<<jnv1.transpose()<<std::endl;
-
-    }
-    else{
-        std::cout<<"pose project solver failed\n";
-    }
-
-
-
-   
-   //jnv1:-0.753121  -0.33532   2.89982 -0.698395   2.93299  0.402084   2.90004   1.69132  0.740147   0.58663 -0.322915  0.522957 -0.835548  -1.46231
-   //jnv2:  4.01836   -1.21812    -2.9223  -0.417688    2.02614  -0.293799   -1.49832    2.32587  0.0393165   -1.33289  -0.241451 -0.0972999   -1.39481   0.394526
-    //move
-    std::vector<double> jnv_vec1(14);
-    Eigen::Map<Eigen::VectorXd>(jnv_vec1.data(),14)=jnv1;
-
-    // pm->move_group_->setJointValueTarget(jnv_vec1);
-    // moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    // bool success=(pm->move_group_->plan(my_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-    // if(success){
-    //     std::cout<<"plan succeed\n";
-    //     pm->move_group_->move();
-    // }
-    
-
-
-   
+      
     sleep(2.0);
-    //visual_tools.deleteAllMarkers();
 
     ros::shutdown();
     return 0;
