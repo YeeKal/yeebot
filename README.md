@@ -61,6 +61,7 @@ This is an experiment running on the real robot.
 ![sda_real_collision1_1_12.gif](examples/figs/sda_real_collision1_1_12.gif)
 
 **SDA5F-Dual arm**
+
 This contains the dual-arm planning and closure constraint planning. In this simulation, a virtual revolute joint is added on the two end-effectors of SDA5F, which means these two end-effector will keep a certain distance and can only rotate about z-axis when moving.
 
 ```
