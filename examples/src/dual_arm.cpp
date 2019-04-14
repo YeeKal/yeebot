@@ -29,8 +29,8 @@ int main(int argc,char **argv){
     int is_project=-1;
     double time_plan_normal=5;
     double time_plan_project=10;
-    double seg_factor=0.2;//step size
-    double delta_factor=0.02;
+    double seg_factor=0.1;//step size
+    double delta_factor=0.01;
     int iter_num=0;
     unsigned int dim=14;
 

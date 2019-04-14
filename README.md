@@ -3,6 +3,7 @@ A light weight motion planning framework based on Moveit+OMPL. The main contribu
 
 - expose planning algorithm api in ompl
 - add [CBiRRT](https://www.ri.cmu.edu/pub_files/2009/5/berenson_dmitry_2009_2.pdf) for motion planning with end-effector
+- add dual-arm planning api and closure constraints planning
 
 There are three ros packages:
 
@@ -59,3 +60,10 @@ This is an experiment running on the real robot.
 
 ![sda_real_collision1_1_12.gif](examples/figs/sda_real_collision1_1_12.gif)
 
+**SDA5F-Dual arm**
+This contains the dual-arm planning and closure constraint planning. In this simulation, a virtual revolute joint is added on the two end-effectors of SDA5F, which means these two end-effector will keep a certain distance and can only rotate about z-axis when moving.
+
+```
+rosrun examples dual_arm
+```
+![sda_dual_withcollision_0.4186.gif](examples/figs/sda_dual_withcollision_0.4186.gif)
