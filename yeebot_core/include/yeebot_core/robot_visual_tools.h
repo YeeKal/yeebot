@@ -11,11 +11,11 @@ namespace rvt=rviz_visual_tools;
 class RobotVisualTools: public rviz_visual_tools::RvizVisualTools{
 public:
     planning_scene::PlanningScenePtr planning_scene_;
-    Eigen::Affine3d text_pose_;
+    Eigen::Isometry3d text_pose_;
 
     RobotVisualTools(const std::string& base_frame,planning_scene::PlanningScenePtr &planning_scene)
     :rviz_visual_tools::RvizVisualTools(base_frame),planning_scene_(planning_scene){
-        text_pose_=Eigen::Affine3d::Identity();
+        text_pose_=Eigen::Isometry3d::Identity();
         text_pose_.translation().z()=0.75;
     }
     void publishText(const std::string &text){
@@ -32,10 +32,12 @@ public:
         publishCube(id,trans_eigen,Eigen::MatrixXd::Identity(3,3),scale);
     }
     void publishCube(unsigned int id,Eigen::Vector3d trans_eigen,Eigen::Matrix3d rot_eigen,Eigen::Vector3d scale){
-        Eigen::Affine3d pose_eigen(Eigen::Translation3d(trans_eigen)*rot_eigen);
+        Eigen::Isometry3d pose_eigen;
+        pose_eigen.pretranslate(trans_eigen);
+        pose_eigen.rotate(rot_eigen);
         publishCube(id,pose_eigen,scale);
     }
-    void publishCube(unsigned int id,Eigen::Affine3d pose_eigen,Eigen::Vector3d scale){
+    void publishCube(unsigned int id,Eigen::Isometry3d pose_eigen,Eigen::Vector3d scale){
         geometry_msgs::Pose pose_msg;
         tf::poseEigenToMsg(pose_eigen,pose_msg);
         publishCube(id,pose_msg,scale);

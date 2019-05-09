@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
   kdl_parser
   #planning context depends
+  rviz_visual_tools  #why?
   moveit_core
   geometric_shapes
   moveit_ros_planning_interface
@@ -32,6 +33,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 find_package(orocos_kdl REQUIRED)
 find_package(ompl REQUIRED)
+#find_package(rviz_visual_tools REQUIRED)
 #find_package(trac_ik_lib REQUIRED)
 
 #set(ompl_include_dirs /home/yee/ompl_moveit/devel/include/ompl
@@ -49,7 +51,7 @@ catkin_package(
     #moveit_planners_ompl
     moveit_ros_planning_interface
     moveit_simple_controller_manager
-    rviz_visual_tools
+    #rviz_visual_tools
     #trac_ik_lib
                        #important
   

@@ -1,3 +1,5 @@
+based on moveit-melodic
+
 ## About 
 A light weight motion planning framework based on Moveit+OMPL. The main contribution in this repository：
 
