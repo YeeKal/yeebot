@@ -53,6 +53,9 @@ void PlanningManager::initializeMoveClient(){
 //initialize parameters for kine class 
 void PlanningManager::initializeKine(){
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(group_name_);
+    const std::vector< std::string > joint_names=jmg->getActiveJointModelNames();
+    active_joint_names_=joint_names;
+
     urdf_model_.initParam(robot_description_);
     if(!kdl_parser::treeFromUrdfModel(urdf_model_,tree_)){
         std::cout<<"error!failed to initialize kdl tree from urdf model."<<std::endl;
@@ -67,7 +70,7 @@ void PlanningManager::initializeKine(){
     }
 }
 KDL::Chain PlanningManager::getChain(const robot_state::JointModelGroup* jmg){
-    std::string base_name=jmg->getActiveJointModels().front()->getParentLinkModel()->getName();
+    std::string base_name=jmg->getJointModels().front()->getParentLinkModel()->getName();
     std::string tip_name=jmg->getLinkModelNames().back();
     KDL::Chain chain;
     tree_.getChain(base_name,tip_name,chain);

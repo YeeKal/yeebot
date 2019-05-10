@@ -91,12 +91,7 @@ int main(int argc,char **argv){
 
     jnv1<<4.2538,-1.32976,-2.75702, -0.222778,1.49657, -0.311092,-1.2878,  0.404481,  0.240521, 1.33799, -0.112667, -2.85933, 1.4513 , 0.957299;
     jnv2<<3.55373, -0.483055 , -2.06244, -0.230711,  0.602476,-1.3995, -0.281545 ,0.479026,1.01328,  0.485986, -0.582673,-1.4243,0.12469, 0.30035;//right
-    yeebot_commute::JointInfo joint_info;
-    joint_info.request.dim=16;//for sda, 
-    if(client.call(joint_info)){
-        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[2],dim);
-        std::cout<<"ref jnv:"<<ref_jnv.transpose()<<std::endl;
-    }
+    
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name,true));
@@ -130,6 +125,13 @@ int main(int argc,char **argv){
     visual_tools.publishCube(0,  0.57,-0.26,1.20,  0.1,0.1,0.15);//add collision
     visual_tools.trigger();
     visual_tools.prompt("next");
+
+    yeebot_commute::JointInfo joint_info;
+    joint_info.request.joint_names=pm->active_joint_names_;//for sda, 
+    if(client.call(joint_info)){
+        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
+        std::cout<<"ref jnv:"<<ref_jnv.transpose()<<std::endl;
+    }
 //move from ref to jnv1
     pn->setStartAndGoalStates(ref_jnv,jnv1);
     if(!pn->plan(time_plan_normal)){

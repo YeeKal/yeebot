@@ -116,9 +116,9 @@ int main(int argc,char **argv){
      Eigen::Isometry3d pose2,pose3;
 
     yeebot_commute::JointInfo joint_info;
-    joint_info.request.dim=7;
+    joint_info.request.joint_names=pm->active_joint_names_;
     if(client.call(joint_info)){
-        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[2],dim);
+        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
         std::cout<<"cur jnv:"<<ref_jnv.transpose()<<std::endl;
     }
 

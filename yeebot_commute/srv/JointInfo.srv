@@ -1,4 +1,4 @@
-int8 dim  #size of joint values
+string[] joint_names 
 #char cmd# indicate which values:p-pos;v-velocity;
 ---
 string[] name

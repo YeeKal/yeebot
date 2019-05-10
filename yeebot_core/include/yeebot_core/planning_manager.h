@@ -53,6 +53,7 @@ public:
 	planning_scene::PlanningScenePtr planning_scene_;
     const std::string group_name_;
     const std::string robot_description_;
+    std::vector<std::string> active_joint_names_;
     //kine
     urdf::Model urdf_model_;
     std::string base_name_;   //base frame of the chain

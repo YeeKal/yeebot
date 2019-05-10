@@ -83,12 +83,7 @@ int main(int argc,char **argv){
     Eigen::VectorXd ref_jnv(dim),jnv1(dim),jnv2(dim);
     Eigen::Isometry3d pose1,pose2;
 
-    yeebot_commute::JointInfo joint_info;
-    joint_info.request.dim=16;//for sda, 
-    if(client.call(joint_info)){
-        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[2],dim);
-        std::cout<<"ref jnv:"<<ref_jnv.transpose()<<std::endl;
-    }
+    
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name,true));
@@ -98,13 +93,18 @@ int main(int argc,char **argv){
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
 
-    
+    yeebot_commute::JointInfo joint_info;
+    joint_info.request.joint_names=pm->active_joint_names_;//for sda, 
+    if(client.call(joint_info)){
+        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
+        std::cout<<"ref jnv:"<<ref_jnv.transpose()<<std::endl;
+    }
 
-    std::cout<<"h1\n";
+
     yeebot::KineDualPtr kine_dual=std::make_shared<yeebot::KineDual>(pm->chains_,pm->urdf_model_,100,invalid_vector,1e-3,1e-6);
     yeebot::PoseConstraintDualPtr pose_con=std::make_shared<yeebot::PoseConstraintDual> (invalid_vector,kine_dual);
     pose_con->setRefPose(ref_pose);
-    std::cout<<"h2\n";
+
     kine_dual->kines_[0]->solveFK(pose1,jnv1.head(kine_dual->kines_[0]->getJointsNum()));
     if(kine_dual->axisProject(ref_pose,invalid_vector,ref_jnv,jnv1)){
         if(kine_dual->kines_[1]->solveFK(pose2,jnv1.tail(kine_dual->kines_[1]->getJointsNum()))){
