@@ -14,13 +14,15 @@ public:
     //robot_state::RobotState robot_state_;
     std::string                           group_name_;
     PlanType plan_type_;
+    robot_state::RobotStatePtr robot_state_;
 
     StateValidityChecker(planning_scene::PlanningScenePtr planning_scene,
                         std::string group_name,
-                        ompl::base::SpaceInformationPtr si,PlanType plan_type)
+                        ompl::base::SpaceInformationPtr si,PlanType plan_type,robot_state::RobotStatePtr robot_state)
     :ompl::base::StateValidityChecker(si), 
     planning_scene_(planning_scene),
-    plan_type_(plan_type){
+    plan_type_(plan_type),
+    robot_state_(robot_state){
         
         group_name_=group_name;
         req_.group_name=group_name_;
@@ -45,7 +47,7 @@ public:
             return false;
         }
         
-        robot_state::RobotState robot_state=planning_scene_->getCurrentStateNonConst();
+        robot_state::RobotState robot_state=*robot_state_;//update jnv not in thid planning group
         robot_state.setJointGroupPositions(group_name_,inner_state->as<ompl_interface::ModelBasedStateSpace::StateType>()->values);
         robot_state.update();
 
@@ -196,7 +198,7 @@ void PlanningContext::updatePlanningSetting(){
     ss_->setPlanner(planner_);
     //ss_->setStateValidityChecker(std::bind(&PlanningContext::isValid,this,_1));
     std::shared_ptr<ompl::base::StateValidityChecker> valid_checker;
-    valid_checker.reset(new StateValidityChecker(planning_scene_,pm_->group_name_,si_,plan_type_));
+    valid_checker.reset(new StateValidityChecker(planning_scene_,pm_->group_name_,si_,plan_type_,robot_state_));
     ss_->setStateValidityChecker(valid_checker);
 
     //set default optimization objective
@@ -216,7 +218,9 @@ bool PlanningContext::isValid(const ompl::base::State *state)const{
         const_cast<ompl::base::State*>(state)->as<ompl_interface::ModelBasedStateSpace::StateType>()->markInvalid();
         return false;
     }
-    robot_state::RobotState robot_state=planning_scene_->getCurrentStateNonConst();
+    //robot_state::RobotState robot_state=planning_scene_->getCurrentStateNonConst();
+    robot_state::RobotState robot_state=*robot_state_;
+    
     si_->getStateSpace()->as<ompl_interface::ModelBasedStateSpace>()->copyToRobotState(robot_state,state);
 
     //check feasibility
@@ -241,7 +245,7 @@ bool PlanningContext::isValid(const ompl::base::State *state)const{
 
 bool PlanningContext::isValid(const Eigen::Ref<const Eigen::VectorXd> &jnt)const{
     collision_detection::CollisionRequest req;
-    robot_state::RobotState robot_state=planning_scene_->getCurrentStateNonConst();
+    robot_state::RobotState robot_state=*robot_state_;
     const robot_state::JointModelGroup* jmg = robot_state.getJointModelGroup(pm_->group_name_);
     robot_state.setJointGroupPositions(jmg, jnt);
     robot_state.update();

@@ -34,7 +34,7 @@ public:
      * node_handle: give execute action an independent ros handle
      **/ 
 	PlanningManager(const std::string& group_name,bool use_moveit=true,
-                    const ros::NodeHandle& node_handle = ros::NodeHandle(),
+                    ros::NodeHandle node_handle = ros::NodeHandle(),
                     const std::string & robot_description=ROBOT_DESCRIPTION
                     );
 	~PlanningManager(){}
@@ -43,6 +43,8 @@ public:
     void initializeMoveClient();
     bool execute(const moveit_msgs::RobotTrajectory& robot_trajectory,bool wait=true);
     bool moveitPlan(Eigen::VectorXd& jnv,moveit_msgs::RobotTrajectory& robot_trajectory);
+    bool updateRobotState();
+    bool getCurrentJnv(Eigen::VectorXd &jnv);
 
 
 
@@ -54,6 +56,7 @@ public:
     const std::string group_name_;
     const std::string robot_description_;
     std::vector<std::string> active_joint_names_;
+    std::vector<std::string> all_active_joint_names_;
     //kine
     urdf::Model urdf_model_;
     std::string base_name_;   //base frame of the chain
@@ -70,6 +73,7 @@ private:
     //某一时刻，只能有一个unique_ptr指向一个给定的对象
     //不支持拷贝
     //the robot is unique, execute_action_client_ should have only one
+    ros::ServiceClient client;
     std::unique_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client_;
     std::unique_ptr<moveit_simple_controller_manager::FollowJointTrajectoryControllerHandle> execute_trajectory_handle_;
 	

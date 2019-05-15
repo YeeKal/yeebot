@@ -1,4 +1,5 @@
 #include "yeebot_core/planning_manager.h"
+#include "yeebot_commute/JointInfo.h"
 /* *
 remove move group
 the planning scene is common for every planner
@@ -8,7 +9,7 @@ the planning scene is common for every planner
 namespace yeebot{
 
 PlanningManager::PlanningManager(const std::string& group_name,bool use_moveit,
-                                const ros::NodeHandle& node_handle,
+                                ros::NodeHandle node_handle,
                                 const std::string & robot_description
                                  )
 :group_name_(group_name),robot_description_(robot_description),
@@ -19,6 +20,12 @@ node_handle_(node_handle),use_moveit_(use_moveit)
 	robot_model_=robot_model_loader.getModel();
 	robot_state_.reset(new robot_state::RobotState(robot_model_));
 	planning_scene_.reset(new planning_scene::PlanningScene(robot_model_));
+	
+	client=node_handle.serviceClient<yeebot_commute::JointInfo>("joint_states_srv");
+    if( ! client.waitForExistence(ros::Duration(2))){
+        std::cout<<"failed to connect joint states service."<<std::endl;
+        exit(1);
+    }
     
     initializeMoveClient();
     
@@ -48,6 +55,7 @@ void PlanningManager::initializeMoveClient(){
             ROS_INFO("connect to server.");
         }
     }
+    
 }
 
 //initialize parameters for kine class 
@@ -55,6 +63,11 @@ void PlanningManager::initializeKine(){
     const robot_state::JointModelGroup* jmg = robot_state_->getJointModelGroup(group_name_);
     const std::vector< std::string > joint_names=jmg->getActiveJointModelNames();
     active_joint_names_=joint_names;
+    
+    const std::vector<moveit::core::JointModel*> active_joint_models=robot_model_->getActiveJointModels();
+    for(int i=0;i<active_joint_models.size();i++){
+        all_active_joint_names_.push_back(active_joint_models[i]->getName());
+    }
 
     urdf_model_.initParam(robot_description_);
     if(!kdl_parser::treeFromUrdfModel(urdf_model_,tree_)){
@@ -69,6 +82,28 @@ void PlanningManager::initializeKine(){
         chains_.push_back(getChain(sub_groups[1]));
     }
 }
+
+//update robot_state (joint values)
+bool PlanningManager::updateRobotState(){
+	yeebot_commute::JointInfo joint_info;
+    joint_info.request.joint_names=all_active_joint_names_;//TODO: planning group
+    if(!client.call(joint_info))
+    	return false;
+    
+    for(int i=0;i<all_active_joint_names_.size();i++){
+    	robot_state_->setJointPositions(all_active_joint_names_[i],&(joint_info.response.position[i]));
+    }
+    return true;
+}
+//get current joint model group joints
+bool PlanningManager::getCurrentJnv(Eigen::VectorXd &jnv){
+	if(!updateRobotState())
+		return false;
+	robot_state_->copyJointGroupPositions(group_name_,jnv);
+	return true;
+	
+}
+
 KDL::Chain PlanningManager::getChain(const robot_state::JointModelGroup* jmg){
     std::string base_name=jmg->getJointModels().front()->getParentLinkModel()->getName();
     std::string tip_name=jmg->getLinkModelNames().back();

@@ -61,6 +61,8 @@ catkin_package(
    # ${ompl_libraries}#important
   INCLUDE_DIRS  #which is neede to indicate the include path
     include
+    ${catkin_INCLUDE_DIRS}
+    "/home/yee/ros_ws/yeebot/devel/include" 
    # ${OMPL_INCLUDE_DIRS}
   DEPENDS
     EIGEN3
@@ -74,6 +76,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   SYSTEM ${EIGEN3_INCLUDE_DIRS}
   SYSTEM ${Boost_INCLUDE_DIRS}
+  "/home/yee/ros_ws/yeebot/devel/include" 
   #SYSTEM ${orocos_kdl_INCLUDE_DIRS} #otherwise error// old version
   #SYSTEM ${OMPL_INCLUDE_DIRS}
   #SYSTEM ${trac_ik_lib_INCLUDE_DIRS}
