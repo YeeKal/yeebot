@@ -50,7 +50,7 @@ int main(int argc,char **argv){
     const std::string group_name="arm_left";
     yeebot::PlanningSpec planning_spec;
     Eigen::VectorXi invalid_vector(6);
-    Eigen::Isometry3d ref_pose,error_pose;
+    Eigen::Affine3d ref_pose,error_pose;
     invalid_vector<<0,0,0,1,1,0;
     Eigen::Vector3d ref_trans;
     Eigen::Matrix3d ref_rot;
@@ -59,9 +59,9 @@ int main(int argc,char **argv){
     //goal
     ref_trans<<0.711815,  0.2496, 1.1416;
 
-    ref_pose=Eigen::Isometry3d(q);
+    ref_pose=Eigen::Affine3d(q);
     ref_pose.pretranslate(ref_trans);
-    error_pose=Eigen::Isometry3d::Identity();
+    error_pose=Eigen::Affine3d::Identity();
     error_pose.pretranslate(Eigen::Vector3d(0.045,0,1.0096));
     ref_pose=error_pose.inverse()*ref_pose;
 
@@ -113,7 +113,7 @@ int main(int argc,char **argv){
     
     
      Eigen::VectorXd ref_jnv(dim),jnv2(dim),jnv3(dim);
-     Eigen::Isometry3d pose2,pose3;
+     Eigen::Affine3d pose2,pose3;
 
     yeebot_commute::JointInfo joint_info;
     joint_info.request.joint_names=pm->active_joint_names_;
@@ -124,15 +124,15 @@ int main(int argc,char **argv){
 
     Eigen::Matrix3d bias1(Eigen::AngleAxisd(M_PI/6,Eigen::Vector3d(0,0,1)));
     Eigen::Matrix3d bias2(Eigen::AngleAxisd(-M_PI/6,Eigen::Vector3d(0,0,1)));
-    // pose2=Eigen::Isometry3d(rot2*rot1);
+    // pose2=Eigen::Affine3d(rot2*rot1);
     // pose2.pretranslate(Eigen::Vector3d(0.45,0.75,0.3));
-    pose3=Eigen::Isometry3d(bias2*ref_rot);
+    pose3=Eigen::Affine3d(bias2*ref_rot);
     pose3.pretranslate(Eigen::Vector3d(0.7,0.35,0.1));
-    pose2=Eigen::Isometry3d(bias1*ref_rot);
+    pose2=Eigen::Affine3d(bias1*ref_rot);
     pose2.pretranslate(Eigen::Vector3d(0.5,0.8,0.3));
-    // pose2=Eigen::Isometry3d(q);
+    // pose2=Eigen::Affine3d(q);
     // pose2.pretranslate(Eigen::Vector3d(0.45,0.75,0.3));
-    // pose3=Eigen::Isometry3d(q);
+    // pose3=Eigen::Affine3d(q);
     // pose3.pretranslate(Eigen::Vector3d(0.65,0.3,0.1));
     visual_tools.publishAxisLabeled(error_pose*pose2, "start");//coordinates with 3 axis
     visual_tools.trigger();

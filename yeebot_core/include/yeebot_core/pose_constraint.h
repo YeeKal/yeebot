@@ -10,7 +10,7 @@ namespace yeebot{
 class PoseConstraint: public ompl::base::Constraint{
 protected:
     Eigen::VectorXi invalid_vector_;    //invalid axis for xyz-rpy
-    Eigen::Isometry3d ref_pose_;    //reference pose, default to Isometry3d::Identity()
+    Eigen::Affine3d ref_pose_;    //reference pose, default to Affine3d::Identity()
 
     KineKdlPtr kine_kdl_;
 public:
@@ -24,8 +24,8 @@ public:
      * reset invalid_vector_
      */ 
     void setInvalidVector(Eigen::VectorXi &x);
-    void setRefPose(Eigen::Isometry3d &ref_pose);
-    void getRefPose(Eigen::Isometry3d &ref_pose) const;
+    void setRefPose(Eigen::Affine3d &ref_pose);
+    void getRefPose(Eigen::Affine3d &ref_pose) const;
 
     void function(const Eigen::Ref<const Eigen::VectorXd> &x,Eigen::Ref<Eigen::VectorXd> out) const override;
     void jacobian(const Eigen::Ref<const Eigen::VectorXd> &x,Eigen::Ref<Eigen::MatrixXd> out) const override;

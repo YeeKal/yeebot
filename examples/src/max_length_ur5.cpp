@@ -51,7 +51,7 @@ int main(int argc,char **argv){
     const std::string group_name="manipulator";
     yeebot::PlanningSpec planning_spec;
     Eigen::VectorXi invalid_vector(6);
-    Eigen::Isometry3d ref_pose;
+    Eigen::Affine3d ref_pose;
     Eigen::Quaterniond q(0,0.707107,0.707107,0);
     Eigen::Matrix3d m1=q.normalized().toRotationMatrix();
     Eigen::Matrix3d m2=Eigen::AngleAxisd(0.2*M_PI,Eigen::Vector3d::UnitX()).toRotationMatrix();
@@ -60,7 +60,7 @@ int main(int argc,char **argv){
 
     invalid_vector<<0,0,0,1,1,0;
     //ref_pose.rotate()
-    ref_pose=Eigen::Isometry3d(m3);
+    ref_pose=Eigen::Affine3d(m3);
     ref_pose.pretranslate(Eigen::Vector3d(0.5,-0.3,0.3));
     std::cout<<"reference pose matrix:\n"<<ref_pose.matrix()<<std::endl;
     planning_spec.ref_pose_=ref_pose;
@@ -119,7 +119,7 @@ int main(int argc,char **argv){
     // visual_tools.publishCube(2,  0.4,0.0,-0.4,  0.8,0.4,0.2);
 
     Eigen::VectorXd ref_jnv(dim),jnv0(dim),start_jnv1(dim),target_jnv1(dim);
-    Eigen::Isometry3d start_pose1, target_pose1;
+    Eigen::Affine3d start_pose1, target_pose1;
     yeebot_commute::JointInfo joint_info;
     joint_info.request.joint_names=pm->active_joint_names_;
     if(client.call(joint_info)){
@@ -146,8 +146,8 @@ int main(int argc,char **argv){
     Eigen::Matrix3d bias1(Eigen::AngleAxisd(M_PI/6,Eigen::Vector3d(0,0,1)));
     Eigen::Matrix3d bias2(Eigen::AngleAxisd(-M_PI/6,Eigen::Vector3d(0,0,1)));
     ref_jnv=3.14*(Eigen::VectorXd::Random(dim));
-    target_pose1=Eigen::Isometry3d(bias1*m3);
-    start_pose1=Eigen::Isometry3d(bias2*m3);
+    target_pose1=Eigen::Affine3d(bias1*m3);
+    start_pose1=Eigen::Affine3d(bias2*m3);
     start_pose1.pretranslate(Eigen::Vector3d(0.5,-0.2,0));
     target_pose1.pretranslate(Eigen::Vector3d(0.6,0.2,0.5));
     visual_tools.publishAxisLabeled(start_pose1, "start");//coordinates with 3 axis

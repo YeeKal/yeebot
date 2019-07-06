@@ -23,7 +23,7 @@ class RobotVisualTools: public rviz_visual_tools::RvizVisualTools{
 public:
     planning_scene::PlanningScenePtr planning_scene_;
     robot_state::RobotStatePtr robot_state_;
-    Eigen::Isometry3d text_pose_;
+    Eigen::Affine3d text_pose_;
     ros::Publisher scene_diff_pub_;
     ros::NodeHandle node_handle_;
     std::vector<moveit_msgs::AttachedCollisionObject> attached_objects_;//store all attach objects
@@ -35,7 +35,7 @@ public:
     planning_scene_(planning_scene),
     robot_state_(robot_state),
     node_handle_(node_handle){
-        text_pose_=Eigen::Isometry3d::Identity();
+        text_pose_=Eigen::Affine3d::Identity();
         text_pose_.translation().z()=0.75;
 
         scene_diff_pub_= node_handle_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
@@ -64,12 +64,12 @@ public:
         publishCube(id,trans_eigen,Eigen::MatrixXd::Identity(3,3),scale);
     }
     void publishCube(unsigned int id,Eigen::Vector3d trans_eigen,Eigen::Matrix3d rot_eigen,Eigen::Vector3d scale){
-        Eigen::Isometry3d pose_eigen;
+        Eigen::Affine3d pose_eigen;
         pose_eigen.pretranslate(trans_eigen);
         pose_eigen.rotate(rot_eigen);
         publishCube(id,pose_eigen,scale);
     }
-    void publishCube(unsigned int id,Eigen::Isometry3d pose_eigen,Eigen::Vector3d scale){
+    void publishCube(unsigned int id,Eigen::Affine3d pose_eigen,Eigen::Vector3d scale){
         geometry_msgs::Pose pose_msg;
         tf::poseEigenToMsg(pose_eigen,pose_msg);
         publishCube(id,pose_msg,scale);
@@ -157,13 +157,13 @@ public:
                     std::string link_name,
                     std::vector<std::string> touch_links=std::vector<std::string>(),
                     SolidType solid_type=SolidType::BOX){
-        Eigen::Isometry3d pose_eigen;
+        Eigen::Affine3d pose_eigen;
         pose_eigen.pretranslate(trans_eigen);
         pose_eigen.rotate(rot_eigen);
         attachCube(id,pose_eigen,scale,link_name,touch_links,solid_type);
     }
     void attachCube(unsigned int id,
-                    Eigen::Isometry3d pose_eigen,
+                    Eigen::Affine3d pose_eigen,
                     Eigen::Vector3d scale,
                     std::string link_name,
                     std::vector<std::string> touch_links=std::vector<std::string>(),
@@ -266,10 +266,10 @@ public:
         planning_scene_->getCurrentStateNonConst().update(); 
         //1. pose of attached link
         geometry_msgs::Pose pose_msg;
-        EigenSTL::vector_Isometry3d poses_eigen;
-        const Eigen::Isometry3d pose_attach=robot_state_->getGlobalLinkTransform(attached_objects_[id].link_name);
+        EigenSTL::vector_Affine3d poses_eigen;
+        const Eigen::Affine3d pose_attach=robot_state_->getGlobalLinkTransform(attached_objects_[id].link_name);
         //2. pose of object
-        const EigenSTL::vector_Isometry3d poses_obj=planning_scene_->getCurrentState().\
+        const EigenSTL::vector_Affine3d poses_obj=planning_scene_->getCurrentState().\
                                                     getAttachedBody("attach_solid"+std::to_string((int)id))\
                                                     ->getGlobalCollisionBodyTransforms();
         attached_objects_[id].object.primitive_poses.clear();

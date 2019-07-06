@@ -60,17 +60,17 @@ int main(int argc,char **argv){
     yeebot::PlanningSpec planning_spec;
     Eigen::VectorXi invalid_vector(6);
     invalid_vector<<1,1,1,1,1,0 ;
-    Eigen::Isometry3d ref_pose,error_pose;
+    Eigen::Affine3d ref_pose,error_pose;
     Eigen::Vector3d ref_trans;
     Eigen::Matrix3d ref_rot;
     //ref_pose, respect to the endeffector of one arm not the world frame
     ref_rot=Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX());
     Eigen::Quaterniond q(ref_rot);
     ref_trans<<0,0, 0.1;
-    ref_pose=Eigen::Isometry3d(q);
+    ref_pose=Eigen::Affine3d(q);
     ref_pose.pretranslate(ref_trans);
 
-    error_pose=Eigen::Isometry3d::Identity();
+    error_pose=Eigen::Affine3d::Identity();
     error_pose.pretranslate(Eigen::Vector3d(0.045,0,1.0096));
 
     std::cout<<"reference pose matrix:\n"<<ref_pose.matrix()<<std::endl;
@@ -81,7 +81,7 @@ int main(int argc,char **argv){
 
     
     Eigen::VectorXd ref_jnv(dim),jnv1(dim),jnv2(dim);
-    Eigen::Isometry3d pose1,pose2;
+    Eigen::Affine3d pose1,pose2;
 
     
 

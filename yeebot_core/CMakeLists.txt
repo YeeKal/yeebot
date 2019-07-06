@@ -63,7 +63,7 @@ catkin_package(
     include
     ${catkin_INCLUDE_DIRS}
     "/home/yee/ros_ws/yeebot/devel/include" 
-   # ${OMPL_INCLUDE_DIRS}
+    ${OMPL_INCLUDE_DIRS}
   DEPENDS
     EIGEN3
     orocos_kdl
@@ -78,7 +78,7 @@ include_directories(
   SYSTEM ${Boost_INCLUDE_DIRS}
   "/home/yee/ros_ws/yeebot/devel/include" 
   #SYSTEM ${orocos_kdl_INCLUDE_DIRS} #otherwise error// old version
-  #SYSTEM ${OMPL_INCLUDE_DIRS}
+  SYSTEM ${OMPL_INCLUDE_DIRS}
   #SYSTEM ${trac_ik_lib_INCLUDE_DIRS}
 )
 #link_directories(BEFORE ${OMPL_LIBRARY_DIRS})

@@ -391,7 +391,7 @@ ompl::geometric::PathGeometric PlanningContext::getOmplPath(){
 void PlanningContext::getTrajectoryMsg(moveit_msgs::RobotTrajectory& robot_trajectory){
     trajectory_.getRobotTrajectoryMsg(robot_trajectory);
 }
-void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_tools,bool lable,Eigen::Isometry3d error_pose){
+void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_tools,bool lable,Eigen::Affine3d error_pose){
     ompl::geometric::PathGeometric path=getOmplPath();
     unsigned int dim=space_->getDimension();
     for(std::size_t i=0;i<path.getStateCount();i++){
@@ -405,7 +405,7 @@ void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_too
         }
         
         if(is_chain_){
-            Eigen::Isometry3d path_pose;
+            Eigen::Affine3d path_pose;
             kine_kdl_->solveFK(path_pose,jnv);
             if(lable){
                 visual_tools.publishAxisLabeled(error_pose*path_pose, std::to_string(i));
@@ -416,7 +416,7 @@ void PlanningContext::publishAxis(rviz_visual_tools::RvizVisualTools &visual_too
             }
         }
         else{   
-            Eigen::Isometry3d path_pose1,path_pose2;
+            Eigen::Affine3d path_pose1,path_pose2;
             kine_dual_->kines_[0]->solveFK(path_pose1,jnv.head(kine_dual_->kines_[0]->getJointsNum()));
             kine_dual_->kines_[1]->solveFK(path_pose2,jnv.tail(kine_dual_->kines_[1]->getJointsNum()));
             if(lable){
@@ -445,7 +445,7 @@ double PlanningContext::getPathCost(){
     }
     return cost;
 }
-void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color,Eigen::Isometry3d error_pose){
+void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color,Eigen::Affine3d error_pose){
     ompl::geometric::PathGeometric path=getOmplPath();
     unsigned int dim=space_->getDimension();
     
@@ -460,7 +460,7 @@ void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &
                     jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
                 }
             }
-            Eigen::Isometry3d path_pose;
+            Eigen::Affine3d path_pose;
             kine_kdl_->solveFK(path_pose,jnv);
             path_pose=error_pose*path_pose;
             visual_tools.publishSphere(path_pose,color,rviz_visual_tools::SMALL);
@@ -486,7 +486,7 @@ void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &
                     jnv[k]=path.getState(i)->as<ompl_interface::ModelBasedStateSpace::StateType>()->values[k];
                 }
             }
-            Eigen::Isometry3d path_pose1,path_pose2;
+            Eigen::Affine3d path_pose1,path_pose2;
             kine_dual_->kines_[0]->solveFK(path_pose1,jnv.head(kine_dual_->kines_[0]->getJointsNum()));
             kine_dual_->kines_[1]->solveFK(path_pose2,jnv.tail(kine_dual_->kines_[1]->getJointsNum()));
             visual_tools.publishSphere(error_pose*path_pose1,color,rviz_visual_tools::SMALL);
@@ -539,7 +539,7 @@ void PlanningContext::registerProjections(ompl::base::StateSpacePtr& space){
     space->registerDefaultProjection(std::make_shared<URProjection>(space.get()));
 }
 //ik should satisfy collision checking
-bool PlanningContext::validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts){
+bool PlanningContext::validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose,unsigned int max_attempts){
     jnt_out=joint_in;//=Eigen::Map<Eigen::VectorXd>(joint_in);
     for(unsigned int i=0;i<max_attempts;i++ ){
         if(kine_kdl_->trackSolveIk(jnt_out,jnt_out,pose)){
@@ -551,7 +551,7 @@ bool PlanningContext::validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,
     return false;
 }
 //ik need not satisfy collision checking
-bool PlanningContext::plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts){
+bool PlanningContext::plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose,unsigned int max_attempts){
     jnt_out=joint_in;
     for(unsigned int i=0;i<max_attempts;i++ ){
         if(kine_kdl_->trackSolveIk(jnt_out,jnt_out,pose)){

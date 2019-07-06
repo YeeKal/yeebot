@@ -85,7 +85,7 @@ inline bool dampedPInv(const Eigen::Ref<const Eigen::MatrixXd>& A,
     return true;
 }
 //convert transform
-inline void KDL2Eigen(const KDL::Frame& k, Eigen::Isometry3d& e){
+inline void KDL2Eigen(const KDL::Frame& k, Eigen::Affine3d& e){
     for(unsigned int i=0;i<3;i++){
         e(i,3)=k.p[i];
     }
@@ -98,7 +98,7 @@ inline void KDL2Eigen(const KDL::Frame& k, Eigen::Isometry3d& e){
     e(3,3)=1;
 }
 
-inline void Eigen2KDL(const Eigen::Isometry3d& e, KDL::Frame& k){
+inline void Eigen2KDL(const Eigen::Affine3d& e, KDL::Frame& k){
     for(unsigned int i=0;i<3;i++){
         k.p[i]=e(i,3);
     }

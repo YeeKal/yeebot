@@ -1,4 +1,4 @@
-based on moveit-melodic
+Compling passed on source installation of kinetic-moveit and 1.4.0-ompl.
 
 ## About 
 A light weight motion planning framework based on Moveit+OMPL. The main contribution in this repository：

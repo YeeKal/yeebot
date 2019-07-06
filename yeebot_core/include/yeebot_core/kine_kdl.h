@@ -28,30 +28,30 @@ public:
 
     void initialize(urdf::Model &urdf_model);
 
-    bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
-    bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
-    bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num) const;
+    bool solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num) const;
     
-    bool solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose) const override;
-    bool trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose);
+    bool solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Affine3d &pose) const override;
+    bool trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose);
 
     bool calcJac(Eigen::Ref<Eigen::MatrixXd> &jacobian, const Eigen::Ref<const Eigen::VectorXd> &joint_values ) const override;
 
     bool getError(const int error_status) const;
 
-    bool trackProject(const Eigen::Isometry3d& ref_pose, 
+    bool trackProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackPPtr &ik_track) const;
-    bool optpProject(const Eigen::Isometry3d& ref_pose, 
+    bool optpProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
-    bool tlpProject(const Eigen::Isometry3d& ref_pose, 
+    bool tlpProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
-    bool tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+    bool tlpProjectNotlocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
-    bool optpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+    bool optpProjectNotlocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out);
     /**
@@ -61,12 +61,12 @@ public:
      * @joint_in initial joint values
      * @joint_out result joint values
      */
-    bool axisProject(const Eigen::Isometry3d& ref_pose, 
+    bool axisProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &joint_in,
                      Eigen::Ref<Eigen::VectorXd> joint_out
                      )const;
-    bool axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool axisProjectLocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &joint_in,
                      Eigen::Ref<Eigen::VectorXd> joint_out
@@ -79,7 +79,7 @@ public:
      * function for constraint space. 
      * calculate the differentiate between two frames
      */ 
-    void function(const Eigen::Isometry3d& ref_pose, 
+    void function(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> err_out) const;
@@ -95,7 +95,7 @@ public:
      * implemente function() and jacobian().
      * use eigen svd
      */ 
-    bool project(const Eigen::Isometry3d& ref_pose, 
+    bool project(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd>& jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const;

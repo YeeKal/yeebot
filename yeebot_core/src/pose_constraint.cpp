@@ -9,7 +9,7 @@ invalid_vector_(invalid_vector),kine_kdl_(kine_kdl)
 //cant use kine_kdl_->getJointsNum, and I dont know why
 {   
     updateManifold();
-    ref_pose_=Eigen::Isometry3d::Identity();
+    ref_pose_=Eigen::Affine3d::Identity();
 }
 
 void PoseConstraint::updateManifold(){
@@ -27,11 +27,11 @@ void PoseConstraint::setInvalidVector(Eigen::VectorXi &x){
         updateManifold();
 }
 
-void PoseConstraint::setRefPose(Eigen::Isometry3d &ref_pose){
+void PoseConstraint::setRefPose(Eigen::Affine3d &ref_pose){
     ref_pose_=ref_pose;
 }
 
-void PoseConstraint::getRefPose(Eigen::Isometry3d &ref_pose) const{
+void PoseConstraint::getRefPose(Eigen::Affine3d &ref_pose) const{
     ref_pose=ref_pose_;
 }
 

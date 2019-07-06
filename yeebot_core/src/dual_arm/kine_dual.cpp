@@ -26,7 +26,7 @@ namespace yeebot{
     }
     //random project
     //arm1 is fixed and change arm2 by iteration
-    bool KineDual::optpProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineDual::optpProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -39,7 +39,7 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
-    bool KineDual::optpProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool KineDual::optpProjectLocal(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -53,7 +53,7 @@ namespace yeebot{
         return getError(error_status);
     }
     //2.add local minima checking: random project
-    bool KineDual::axisProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineDual::axisProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -127,7 +127,7 @@ namespace yeebot{
         
     }
     //2.add local minima checking: nearest project
-    bool KineDual::axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool KineDual::axisProjectLocal(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -202,7 +202,7 @@ namespace yeebot{
         return getError(-5);
     }
     //initial cbirrt 
-    bool KineDual::plainProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineDual::plainProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -288,15 +288,15 @@ namespace yeebot{
     KDL::Vector KineDual::eleMulti(const KDL::Vector &vec1,const KDL::Vector &vec2)const{
         return KDL::Vector(vec1.data[0]*vec2.data[0],vec1.data[1]*vec2.data[1],vec1.data[2]*vec2.data[2]);
     }
-    bool KineDual::solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const{
+    bool KineDual::solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const{
         return true;
     }
 
-    bool KineDual::solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const{
+    bool KineDual::solveFK(Eigen::Affine3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const{
         return true;
     }
 
-    bool KineDual::solveIK( const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose) const{
+    bool KineDual::solveIK( const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Affine3d &pose) const{
         return true;
     }
 

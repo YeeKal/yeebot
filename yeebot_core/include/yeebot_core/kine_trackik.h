@@ -23,11 +23,11 @@ class KineTrackIk:KineBase {
 public:
     KineTrackIk(const std::string& urdf_param,const std::string& base_name,const std::string& tip_name);
 
-    bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
-    bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
-    bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num) const;
+    bool solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num) const;
     
-    bool solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose) const override;
+    bool solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Affine3d &pose) const override;
 
     bool calcJac(Eigen::Ref<Eigen::MatrixXd> &jacobian, const Eigen::Ref<const Eigen::VectorXd> &joint_values ) const override;
 
@@ -40,7 +40,7 @@ public:
      * @joint_in initial joint values
      * @joint_out result joint values
      */
-    bool axisProject(const Eigen::Isometry3d& ref_pose, 
+    bool axisProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &joint_in,
                      Eigen::Ref<Eigen::VectorXd> joint_out
@@ -53,7 +53,7 @@ public:
      * function for constraint space. 
      * calculate the differentiate between two frames
      */ 
-    void function(const Eigen::Isometry3d& ref_pose, 
+    void function(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> err_out) const;
@@ -69,7 +69,7 @@ public:
      * implemente function() and jacobian().
      * use eigen svd
      */ 
-    bool project(const Eigen::Isometry3d& ref_pose, 
+    bool project(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd>& jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const;

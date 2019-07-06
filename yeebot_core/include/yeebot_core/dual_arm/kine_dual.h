@@ -20,23 +20,23 @@ class KineDual:public KineBase {
 public:
     KineDual(std::vector<KDL::Chain> chains,urdf::Model &urdf_model,int max_iter=100,Eigen::VectorXi invalid_axis=Eigen::VectorXi::Zero(6),double project_error=1e-3,double eps=1e-6);
 
-    bool axisProject(const Eigen::Isometry3d& ref_pose, 
+    bool axisProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
-    bool axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool axisProjectLocal(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
-    bool plainProject(const Eigen::Isometry3d& ref_pose, 
+    bool plainProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
-    bool optpProject(const Eigen::Isometry3d& ref_pose, 
+    bool optpProject(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out)const;
-    bool optpProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool optpProjectLocal(const Eigen::Affine3d& ref_pose, 
                     const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                     const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                     Eigen::Ref<Eigen::VectorXd> jnt_out) const;
@@ -45,14 +45,14 @@ public:
     KDL::Vector eleMulti(const KDL::Vector &vec1,const KDL::Vector &vec2)const;
     bool getError(const int error_status) const;
 
-    bool solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
     /**
      * solve forward kinematics
      * @link_name name of the target link
      */ 
-    bool solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
+    bool solveFK(Eigen::Affine3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values) const override;
 
-    bool solveIK( const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose) const override;
+    bool solveIK( const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Affine3d &pose) const override;
 
     bool calcJac(Eigen::Ref<Eigen::MatrixXd> &jacobian, const Eigen::Ref<const Eigen::VectorXd> &joint_values ) const override;
 

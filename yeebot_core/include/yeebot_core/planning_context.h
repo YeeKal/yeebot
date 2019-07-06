@@ -35,7 +35,7 @@ enum PlanType{
 //TODO: base_link and tip_link will be accessed from planning_group_
 struct PlanningSpec{
     Eigen::VectorXi invalid_vector_;
-    Eigen::Isometry3d ref_pose_;
+    Eigen::Affine3d ref_pose_;
     double project_error_;
     double ik_error_;
 };
@@ -119,8 +119,8 @@ public:
 
     void getTrajectoryMsg(moveit_msgs::RobotTrajectory& robot_trajectory);
 
-    void publishAxis(rviz_visual_tools::RvizVisualTools& visual_tools,bool lable=true,Eigen::Isometry3d error_pose=Eigen::Isometry3d::Identity());
-    void publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color=rviz_visual_tools::GREEN,Eigen::Isometry3d error_pose=Eigen::Isometry3d::Identity());
+    void publishAxis(rviz_visual_tools::RvizVisualTools& visual_tools,bool lable=true,Eigen::Affine3d error_pose=Eigen::Affine3d::Identity());
+    void publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &visual_tools,const rviz_visual_tools::colors& color=rviz_visual_tools::GREEN,Eigen::Affine3d error_pose=Eigen::Affine3d::Identity());
 
     planning_scene::PlanningScenePtr& getPlanningScene(){
         return planning_scene_;
@@ -130,8 +130,8 @@ public:
         return robot_state_;
     }
     void registerProjections(ompl::base::StateSpacePtr& space);
-    bool validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts=10);
-    bool plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose,unsigned int max_attempts=5);
+    bool validIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose,unsigned int max_attempts=10);
+    bool plainIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose,unsigned int max_attempts=5);
 
 
 

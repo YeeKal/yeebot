@@ -60,10 +60,10 @@ namespace yeebot{
         iksolver_nr_jl_.reset(new KDL::ChainIkSolverPos_NR_JL(chain_,joints_min,joints_max,*fksolver_,*iksolver_vel_,max_iter_,eps_));
         iksolver_trackp_.reset(new yeebot::IkSolverPosTrackP(chain_,joints_min,joints_max,invalid_axis_,0.005,project_error_,Speed));
     }
-    bool KineKdl::solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
+    bool KineKdl::solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
         return solveFK(pose,joint_values,-1);
     }
-    bool KineKdl::solveFK(Eigen::Isometry3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
+    bool KineKdl::solveFK(Eigen::Affine3d & pose, const std::string& link_name, const Eigen::Ref<const Eigen::VectorXd> &joint_values)const{
         // if(link_name==base_name_){
         //     pose.setIdentity();
         //     return true;
@@ -76,7 +76,7 @@ namespace yeebot{
         }
     }
 
-    bool KineKdl::solveFK(Eigen::Isometry3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num)const{
+    bool KineKdl::solveFK(Eigen::Affine3d & pose, const Eigen::Ref<const Eigen::VectorXd> &joint_values,int link_num)const{
         KDL::JntArray kdl_joints;
         Eigen2KDL(joint_values,kdl_joints);
         KDL::Frame kdl_pose;
@@ -97,7 +97,7 @@ namespace yeebot{
  * trac:fail-4047 time-29.096
  */ 
 
-    bool KineKdl::trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Isometry3d &pose)
+    bool KineKdl::trackSolveIk(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &jnt_out,const Eigen::Affine3d &pose)
     {
         KDL::JntArray kdl_joints_in,kdl_joints_values;//ik initial joint values
         Eigen2KDL(joint_in,kdl_joints_in);
@@ -128,7 +128,7 @@ namespace yeebot{
  * 
 **/
     
-    bool KineKdl::solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Isometry3d &pose)const{
+    bool KineKdl::solveIK(const Eigen::Ref<const Eigen::VectorXd> &joint_in,Eigen::VectorXd &joint_values,const Eigen::Affine3d &pose)const{
         KDL::JntArray kdl_joints_in;//ik initial joint values
         Eigen2KDL(joint_in,kdl_joints_in);
         KDL::Frame kdl_pose;
@@ -214,7 +214,7 @@ namespace yeebot{
         }
         return false;
     }
-   bool KineKdl::trackProject(const Eigen::Isometry3d& ref_pose, 
+   bool KineKdl::trackProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out, IkSolverPosTrackPPtr &ik_track)const 
     {   
@@ -227,7 +227,7 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
-    bool KineKdl::optpProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::optpProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
     {   
@@ -240,7 +240,7 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
-    bool KineKdl::tlpProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::tlpProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
     {   
@@ -254,7 +254,7 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
-     bool KineKdl::optpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+     bool KineKdl::optpProjectNotlocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
     {   
@@ -270,7 +270,7 @@ namespace yeebot{
         KDL2Eigen(kdl_jnt_out,jnt_out);
         return getError(error_status);
     }
-    bool KineKdl::tlpProjectNotlocal(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::tlpProjectNotlocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out)
     {   
@@ -285,7 +285,7 @@ namespace yeebot{
         return getError(error_status);
     }
     //kdl project with joint limits
-    bool KineKdl::axisProject(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::axisProject(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -352,7 +352,7 @@ namespace yeebot{
     }
 
     //for test
-    bool KineKdl::axisProjectLocal(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::axisProjectLocal(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> jnt_out) const
@@ -423,7 +423,7 @@ namespace yeebot{
     }
 
      //for function in constraint space
-    void KineKdl::function(const Eigen::Isometry3d& ref_pose, 
+    void KineKdl::function(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd> err_out) const{
@@ -479,7 +479,7 @@ namespace yeebot{
     kdl is faster(1000,0.4s) but more times to fail.
     eigen is slower(1000,1.6s) but less times to fail.
     */
-    bool KineKdl::project(const Eigen::Isometry3d& ref_pose, 
+    bool KineKdl::project(const Eigen::Affine3d& ref_pose, 
                      const Eigen::Ref<const Eigen::VectorXi>& invalid_axis,
                      const Eigen::Ref<const Eigen::VectorXd> &jnt_in,
                      Eigen::Ref<Eigen::VectorXd>  jnt_out) const{

@@ -60,17 +60,17 @@ int main(int argc,char **argv){
     yeebot::PlanningSpec planning_spec;
     Eigen::VectorXi invalid_vector(6);
     invalid_vector<<1,1,1,1,1,0 ;
-    Eigen::Isometry3d ref_pose,error_pose;
+    Eigen::Affine3d ref_pose,error_pose;
     Eigen::Vector3d ref_trans;
     Eigen::Matrix3d ref_rot;
     //ref_pose, respect to the endeffector of one arm not the world frame
     ref_rot=Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX());
     Eigen::Quaterniond q(ref_rot);
     ref_trans<<0,0, 0.1;
-    ref_pose=Eigen::Isometry3d(q);
+    ref_pose=Eigen::Affine3d(q);
     ref_pose.pretranslate(ref_trans);
 
-    error_pose=Eigen::Isometry3d::Identity();
+    error_pose=Eigen::Affine3d::Identity();
     error_pose.pretranslate(Eigen::Vector3d(0.045,0,1.0096));
 
     std::cout<<"reference pose matrix:\n"<<ref_pose.matrix()<<std::endl;
@@ -81,7 +81,7 @@ int main(int argc,char **argv){
 
     
     Eigen::VectorXd ref_jnv(dim),jnv1(dim),jnv2(dim);
-    Eigen::Isometry3d pose1,pose2;
+    Eigen::Affine3d pose1,pose2;
 
     //jnv1<<-0.753121, -0.33532, 2.89982, -0.698395,   2.93299,  0.402084, 2.90004,1.69132, 0.740147,0.58663,-0.322915 , 0.522957, -0.835548,-1.46231;//down
     //jnv2<<3.41495,  -0.123868, -1.91753, -0.464354, 0.194983, -0.990569, -0.0458806,  1.81432 ,1.12425, -0.480637,-0.273099, -1.03692,-0.56874,0.682944;//right
