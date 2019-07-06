@@ -1,4 +1,7 @@
 ## About 
+
+Compling passed on source installation of kinetic-moveit and 1.4.0-ompl.
+
 A light weight motion planning framework based on Moveit+OMPL. The main contribution in this repository：
 
 - expose planning algorithm api in ompl
