@@ -119,7 +119,7 @@ int main(int argc,char **argv){
     display_trajectory.model_id="motoman_sda5f";
     moveit_msgs::RobotTrajectory robot_trajectory;
 
-    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
+    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_,pm->robot_state_);
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
     visual_tools.publishCube(0,  0.57,-0.26,1.20,  0.1,0.1,0.15);//add collision

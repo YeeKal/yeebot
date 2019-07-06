@@ -87,8 +87,10 @@ void PlanningManager::initializeKine(){
 bool PlanningManager::updateRobotState(){
 	yeebot_commute::JointInfo joint_info;
     joint_info.request.joint_names=all_active_joint_names_;//TODO: planning group
-    if(!client.call(joint_info))
+    if(!client.call(joint_info)){
+        std::cout<<"update robot state failed\n";
     	return false;
+    }
     
     for(int i=0;i<all_active_joint_names_.size();i++){
     	robot_state_->setJointPositions(all_active_joint_names_[i],&(joint_info.response.position[i]));

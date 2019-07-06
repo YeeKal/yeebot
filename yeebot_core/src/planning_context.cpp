@@ -336,7 +336,8 @@ void PlanningContext::postSolve(){
     ompl::geometric::PathGeometric &pg = ss_->getSolutionPath();
     switch(plan_type_){
         case PlanType::NORMAL:{
-            int path_num=std::max((int)floor(0.5 + pg.length() / (0.02*space_->getMaximumExtent())), 2);
+            double seg=space_->as<ompl_interface::ModelBasedStateSpace>()->getLongestValidSegmentFraction();
+            int path_num=std::max((int)floor(0.5 + pg.length() / (seg*space_->getMaximumExtent())), 2);
             pg.interpolate(path_num);
             break;
         }

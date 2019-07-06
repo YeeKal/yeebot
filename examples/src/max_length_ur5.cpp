@@ -101,7 +101,7 @@ int main(int argc,char **argv){
         return 0;
     }
     //visual tools
-    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
+    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_,pm->robot_state_);
     visual_tools.publishText(" motion planning");
     visual_tools.trigger();
     visual_tools.deleteAllMarkers();

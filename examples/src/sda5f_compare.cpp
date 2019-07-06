@@ -94,7 +94,7 @@ int main(int argc,char **argv){
         return 0;
     }
     //sleep_time.sleep();//wait for rviz to start
-    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
+    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_,pm->robot_state_);
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
     //visual_tools.publishText(" motion planning");

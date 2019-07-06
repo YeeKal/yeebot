@@ -89,7 +89,7 @@ int main(int argc,char **argv){
     pm.reset(new yeebot::PlanningManager(group_name,true));
     robot_state::RobotStatePtr robot_state=pm->robot_state_;
 
-    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_);
+    yeebot::RobotVisualTools visual_tools("world",pm->planning_scene_,pm->robot_state_);
     visual_tools.deleteAllMarkers();
     visual_tools.trigger();
 

@@ -1,6 +1,14 @@
 #include "yeebot_core/utils.h"
+#include <moveit/robot_state/attached_body.h>
 
 namespace yeebot{
+
+enum SolidType{
+    BOX,            
+    SPHERE,
+    CYLINDER,
+    CONE       
+};
 namespace rvt=rviz_visual_tools;
 
 /*
@@ -67,26 +75,6 @@ public:
         publishCube(id,pose_msg,scale);
     }
     void publishCube(unsigned int id,geometry_msgs::Pose pose_msg,Eigen::Vector3d scale){
-        //to rviz
-        // visualization_msgs::Marker marker;
-        // marker.header.frame_id= base_frame_;
-        // marker.header.stamp=ros::Time::now();
-        // marker.ns = "basic_shapes";
-        // marker.id=id;
-        // marker.type=visualization_msgs::Marker::CUBE;
-        // marker.action = visualization_msgs::Marker::ADD;
-        // marker.pose=pose_msg;
-        // marker.scale.x=scale[0];
-        // marker.scale.y=scale[1];
-        // marker.scale.z=scale[2];
-        // marker.color.r = 0.0f;
-        // marker.color.g = 1.0f;
-        // marker.color.b = 0.0f;
-        // marker.color.a = 1.0;
-        // marker.lifetime = ros::Duration();
-        // rviz_visual_tools::RvizVisualTools::publishMarker(marker);
-        //pub planning scene
-       
 
         //to planning scene
         moveit_msgs::CollisionObject collision_object;
@@ -106,7 +94,12 @@ public:
         planning_scene_k.world.collision_objects.push_back(collision_object);
         planning_scene_k.is_diff = true;
 
-        pubScene(planning_scene_k,0.5);
+        scene_diff_pub_.publish(planning_scene_k);//to moveit or to rviz
+        planning_scene_->processCollisionObjectMsg(collision_object);
+        ros::WallDuration sleep_t(0.5);
+        sleep_t.sleep();
+
+        //pubScene(planning_scene_k,0.5);
     }
     void delCube(unsigned int id){
        
@@ -119,7 +112,11 @@ public:
         moveit_msgs::PlanningScene planning_scene_k;
         planning_scene_k.world.collision_objects.push_back(collision_object);
         planning_scene_k.is_diff = true;
-        pubScene(planning_scene_k,0.5);
+        //pubScene(planning_scene_k,0.5);
+        scene_diff_pub_.publish(planning_scene_k);//to moveit or to rviz
+        planning_scene_->processCollisionObjectMsg(collision_object);
+        ros::WallDuration sleep_t(0.5);
+        sleep_t.sleep();
     }
     /*********************************************
     @attachCube
@@ -129,56 +126,80 @@ public:
     //2. startAttachCube: remove the corresponding collision object and start attach
     //3. detachCube an object and introduce as a collision
     //4. delAttacgCube collision from the environment
+    /**
+           | <----^
+           v      |
+    1 ---> 2 ---> 3 ---> 4
+    **/
    
     void attachCube(unsigned int id,double x,double y,double z,double scale_x,double scale_y,double scale_z,
                     std::string link_name,
-                    std::vector<std::string> touch_links=std::vector<std::string>()){
+                    std::vector<std::string> touch_links=std::vector<std::string>(),
+                    SolidType solid_type=SolidType::BOX){
         Eigen::Vector3d trans_eigen;
         Eigen::Vector3d scale;
         trans_eigen<<x,y,z;
         scale<<scale_x,scale_y,scale_z;
-        attachCube(id,trans_eigen,scale,link_name,touch_links);
+        attachCube(id,trans_eigen,scale,link_name,touch_links,solid_type);
     }
     void attachCube(unsigned int id,
                     Eigen::Vector3d trans_eigen,
                     Eigen::Vector3d scale,
                     std::string link_name,
-                    std::vector<std::string> touch_links=std::vector<std::string>()){
-        attachCube(id,trans_eigen,Eigen::MatrixXd::Identity(3,3),scale,link_name,touch_links);
+                    std::vector<std::string> touch_links=std::vector<std::string>(),
+                    SolidType solid_type=SolidType::BOX){
+        attachCube(id,trans_eigen,Eigen::MatrixXd::Identity(3,3),scale,link_name,touch_links,solid_type);
     }
     void attachCube(unsigned int id,
                     Eigen::Vector3d trans_eigen,
                     Eigen::Matrix3d rot_eigen,
                     Eigen::Vector3d scale,
                     std::string link_name,
-                    std::vector<std::string> touch_links=std::vector<std::string>()){
+                    std::vector<std::string> touch_links=std::vector<std::string>(),
+                    SolidType solid_type=SolidType::BOX){
         Eigen::Isometry3d pose_eigen;
         pose_eigen.pretranslate(trans_eigen);
         pose_eigen.rotate(rot_eigen);
-        attachCube(id,pose_eigen,scale,link_name,touch_links);
+        attachCube(id,pose_eigen,scale,link_name,touch_links,solid_type);
     }
     void attachCube(unsigned int id,
                     Eigen::Isometry3d pose_eigen,
                     Eigen::Vector3d scale,
                     std::string link_name,
-                    std::vector<std::string> touch_links=std::vector<std::string>()){
+                    std::vector<std::string> touch_links=std::vector<std::string>(),
+                    SolidType solid_type=SolidType::BOX){
         geometry_msgs::Pose pose_msg;
         tf::poseEigenToMsg(pose_eigen,pose_msg);
-        attachCube(id,pose_msg,scale,link_name,touch_links);
+        attachCube(id,pose_msg,scale,link_name,touch_links,solid_type);
     }
     void attachCube(unsigned int id,
                     geometry_msgs::Pose pose_msg,
                     Eigen::Vector3d scale,
                     std::string link_name,
-                    std::vector<std::string> touch_links=std::vector<std::string>()){
+                    std::vector<std::string> touch_links=std::vector<std::string>(),
+                    SolidType solid_type=SolidType::BOX){
         moveit_msgs::AttachedCollisionObject attached_object;
         attached_object.link_name = link_name;
         attached_object.object.header.frame_id = base_frame_;
-        attached_object.object.id = "attach_cube"+std::to_string((int)id);
+        attached_object.object.id = "attach_solid"+std::to_string((int)id);
 
         /* Define a box to be attached */
         shape_msgs::SolidPrimitive primitive;
-        primitive.type = primitive.BOX;
+        switch(solid_type){
+            case SolidType::BOX:
+                primitive.type = primitive.BOX;
+                break;
+            case SolidType::CYLINDER:
+                primitive.type = primitive.CYLINDER;
+                break;
+            case SolidType::SPHERE:
+                primitive.type = primitive.SPHERE;
+                break;
+            case SolidType::CONE:
+                primitive.type = primitive.CONE;
+                break;
+        }
+        
         primitive.dimensions.resize(3);
         primitive.dimensions[0] = scale[0];
         primitive.dimensions[1] = scale[1];
@@ -192,8 +213,7 @@ public:
         }
         attached_objects_.push_back(attached_object);
 
-        moveit_msgs::RobotState robot_state;
-        moveit::core::robotStateMsgToRobotState(robot_state,*robot_state_);
+        
         
 
 
@@ -202,12 +222,17 @@ public:
         planning_scene_k.world.collision_objects.push_back(attached_object.object);
         planning_scene_k.is_diff = true;
 
-        pubScene(planning_scene_k,0.5);
+        scene_diff_pub_.publish(planning_scene_k);//to moveit or to rviz
+        planning_scene_->processCollisionObjectMsg(attached_object.object);
+        ros::WallDuration sleep_t(0.5);
+        sleep_t.sleep();
+
+        //pubScene(planning_scene_k,0.5);
     }
     void startAttachCube(unsigned int id){
         //remove collision
         moveit_msgs::CollisionObject remove_object;
-        remove_object.id = "attach_cube"+std::to_string((int)id);
+        remove_object.id = "attach_solid"+std::to_string((int)id);
         remove_object.header.frame_id =base_frame_;
         remove_object.operation = remove_object.REMOVE;
 
@@ -216,6 +241,12 @@ public:
         planning_scene_k.robot_state.attached_collision_objects.push_back(attached_objects_[id]);
         planning_scene_k.is_diff = true;
         //pubScene(planning_scene_k,0.5);
+
+        //update robot state
+        const double* pos = robot_state_->getVariablePositions();
+        planning_scene_->getCurrentStateNonConst().setVariablePositions(pos);
+        planning_scene_->getCurrentStateNonConst().update(); 
+
         scene_diff_pub_.publish(planning_scene_k);//to moveit or to rviz
         planning_scene_->processCollisionObjectMsg(remove_object);
         planning_scene_->processAttachedCollisionObjectMsg(attached_objects_[id]);//to custom planning
@@ -224,17 +255,29 @@ public:
     }
     void detachCube(unsigned int id){
         moveit_msgs::AttachedCollisionObject detach_object;
-        detach_object.object.id = "attach_cube"+std::to_string((int)id);
+        detach_object.object.id = "attach_solid"+std::to_string((int)id);
         detach_object.link_name = base_frame_;
         detach_object.object.operation = detach_object.object.REMOVE;
 
         //object pose
+        //0. update robot state
+        const double* pos = robot_state_->getVariablePositions();
+        planning_scene_->getCurrentStateNonConst().setVariablePositions(pos);
+        planning_scene_->getCurrentStateNonConst().update(); 
+        //1. pose of attached link
         geometry_msgs::Pose pose_msg;
-        const Eigen::Isometry3d pose_eigen=robot_state_->getGlobalLinkTransform(attached_objects_[id].link_name);
-        tf::poseEigenToMsg(pose_eigen,pose_msg);
+        EigenSTL::vector_Isometry3d poses_eigen;
+        const Eigen::Isometry3d pose_attach=robot_state_->getGlobalLinkTransform(attached_objects_[id].link_name);
+        //2. pose of object
+        const EigenSTL::vector_Isometry3d poses_obj=planning_scene_->getCurrentState().\
+                                                    getAttachedBody("attach_solid"+std::to_string((int)id))\
+                                                    ->getGlobalCollisionBodyTransforms();
         attached_objects_[id].object.primitive_poses.clear();
-        attached_objects_[id].object.primitive_poses.push_back(pose_msg);
-        
+        for(std::size_t i=0;i<poses_obj.size();i++){
+            poses_eigen.push_back(pose_attach*poses_obj[i]);
+            tf::poseEigenToMsg(poses_obj[i],pose_msg);
+            attached_objects_[id].object.primitive_poses.push_back(pose_msg);
+        }
 
         moveit_msgs::PlanningScene planning_scene_k;
         planning_scene_k.is_diff = true;
@@ -254,7 +297,7 @@ public:
     }
     void delAttacgCube(unsigned int id){
         moveit_msgs::CollisionObject remove_object;
-        remove_object.id = "attach_cube"+std::to_string((int)id);
+        remove_object.id = "attach_solid"+std::to_string((int)id);
         remove_object.header.frame_id =base_frame_;
         remove_object.operation = remove_object.REMOVE;
 
@@ -276,9 +319,22 @@ public:
         remove_object.header.frame_id =base_frame_;
         remove_object.operation = remove_object.REMOVE;
         moveit_msgs::PlanningScene planning_scene_k;
+
+        moveit_msgs::AttachedCollisionObject detach_object;
+        detach_object.link_name = base_frame_;
+        detach_object.object.operation = detach_object.object.REMOVE;
+
         planning_scene_k.is_diff = true;
         planning_scene_k.world.collision_objects.push_back(remove_object);
-        pubScene(planning_scene_k,0.5);
+        planning_scene_k.robot_state.attached_collision_objects.push_back(detach_object);
+        planning_scene_k.robot_state.is_diff=true;
+        
+        scene_diff_pub_.publish(planning_scene_k);
+        planning_scene_->processAttachedCollisionObjectMsg(detach_object);//to custom planning
+        planning_scene_->processCollisionObjectMsg(remove_object);
+        ros::WallDuration sleep_t(0.5);
+        sleep_t.sleep();
     }
+
 };
 }
