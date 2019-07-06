@@ -32,6 +32,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED system filesystem date_time thread)
 find_package(orocos_kdl REQUIRED)
 find_package(ompl REQUIRED)
+find_package(rviz_visual_tools REQUIRED)
 #find_package(trac_ik_lib REQUIRED)
 
 #set(ompl_include_dirs /home/yee/ompl_moveit/devel/include/ompl
@@ -49,7 +50,8 @@ catkin_package(
     #moveit_planners_ompl
     moveit_ros_planning_interface
     moveit_simple_controller_manager
-    rviz_visual_tools
+	#moveit_visual_tools
+    
     #trac_ik_lib
                        #important
   
@@ -59,7 +61,8 @@ catkin_package(
    # ${ompl_libraries}#important
   INCLUDE_DIRS  #which is neede to indicate the include path
     include
-   # ${OMPL_INCLUDE_DIRS}
+   ${OMPL_INCLUDE_DIRS}
+   ${rviz_visual_tools_INCLUDE_DIRS}
   DEPENDS
     EIGEN3
     orocos_kdl
@@ -68,12 +71,14 @@ catkin_package(
 )
 
 include_directories(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS 
+	include
   ${catkin_INCLUDE_DIRS}
   SYSTEM ${EIGEN3_INCLUDE_DIRS}
   SYSTEM ${Boost_INCLUDE_DIRS}
   #SYSTEM ${orocos_kdl_INCLUDE_DIRS} #otherwise error// old version
-  #SYSTEM ${OMPL_INCLUDE_DIRS}
+  SYSTEM ${OMPL_INCLUDE_DIRS}
+  SYATEM ${rviz_visual_tools_INCLUDE_DIRS}
   #SYSTEM ${trac_ik_lib_INCLUDE_DIRS}
 )
 #link_directories(BEFORE ${OMPL_LIBRARY_DIRS})
