@@ -463,7 +463,9 @@ void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &
             Eigen::Affine3d path_pose;
             kine_kdl_->solveFK(path_pose,jnv);
             path_pose=error_pose*path_pose;
-            visual_tools.publishSphere(path_pose,color,rviz_visual_tools::SMALL);
+            Eigen::Vector3d trans_pose;
+            trans_pose<<path_pose(0,3),path_pose(1,3),path_pose(2,3);
+            visual_tools.publishSphere(trans_pose,color,rviz_visual_tools::SMALL);
             geometry_msgs::Point point1;
             point1.x=path_pose.translation().x();
             point1.y=path_pose.translation().y();
@@ -471,7 +473,7 @@ void PlanningContext::publishTrajectoryLine(rviz_visual_tools::RvizVisualTools &
 
             line.push_back(point1);
         }
-        const double radius=0.005;
+        const double radius=0.01;
         visual_tools.publishPath(line,color,radius);
         visual_tools.trigger();
     }
