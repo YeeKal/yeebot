@@ -16,7 +16,9 @@
 #include <yeebot_commute/JointInfo.h>
 #include <yeebot_core/cbirrt.h>
 
+void printHelp();
 int main(int argc,char **argv){
+    printHelp();
     ros::init(argc,argv,"sda5f_compare");
     ros::NodeHandle node_handle;
 
@@ -74,6 +76,7 @@ int main(int argc,char **argv){
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name,true));
+    pm->updateRobotState();
     yeebot::PlanningContextPtr pc,pp;
 
     pc.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::NORMAL));
@@ -115,12 +118,8 @@ int main(int argc,char **argv){
      Eigen::VectorXd ref_jnv(dim),jnv2(dim),jnv3(dim);
      Eigen::Affine3d pose2,pose3;
 
-    yeebot_commute::JointInfo joint_info;
-    joint_info.request.joint_names=pm->active_joint_names_;
-    if(client.call(joint_info)){
-        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
-        std::cout<<"cur jnv:"<<ref_jnv.transpose()<<std::endl;
-    }
+    pm->getCurrentJnv(ref_jnv);
+    std::cout<<"ref_jnv:"<<ref_jnv.transpose()<<std::endl;
 
     Eigen::Matrix3d bias1(Eigen::AngleAxisd(M_PI/6,Eigen::Vector3d(0,0,1)));
     Eigen::Matrix3d bias2(Eigen::AngleAxisd(-M_PI/6,Eigen::Vector3d(0,0,1)));
@@ -197,47 +196,49 @@ int main(int argc,char **argv){
 //jnv2 to jnv3
 // std::cout<<"any key to continue\n";
 // while(getchar()!='q'){
-    std::cout<<"move from pose2 to pose3"<<std::endl;
-    double all_time=0;
-    double all_cost=0;
-    int success_time=0;
-    std::fstream out;
-    out.open("sda_TLP_EXTEND_0.2_"+std::to_string(iter_num)+".txt",std::ios::out);
-    if (!out.is_open()){
-        std::cout<<"failed to open file\n";
-    }
-for(int k=0;k<iter_num;k++){
-    
-    pp->setStartAndGoalStates(jnv2,jnv3);
-    //time_ik_start=ros::Time::now();
-    if(!pp->plan(time_plan_project)){
-        continue;
-    }
-    success_time++;
-    double cost=pp->getPathCost();
-    std::cout<<k<<":"<<pp->ss_->getLastPlanComputationTime()<<":"<<cost<<std::endl;
-    out<<success_time<<","<<pp->ss_->getLastPlanComputationTime()<<","<<cost<<std::endl;
-    all_time +=pp->ss_->getLastPlanComputationTime();
-    all_cost+=cost;
-    //time_ik_end=ros::Time::now();
-    //std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
-    // pp->getTrajectoryMsg(robot_trajectory);
-    // std::cout<<"points number:"<<robot_trajectory.joint_trajectory.points.size()<<std::endl;
-    // display_trajectory.trajectory.push_back(robot_trajectory);
-    // display_publisher.publish(display_trajectory);
-    // pp->publishTrajectoryLine(visual_tools,rviz_visual_tools::GREEN,error_pose);
+if(iter_num>1){
+        std::cout<<"move from pose2 to pose3"<<std::endl;
+        double all_time=0;
+        double all_cost=0;
+        int success_time=0;
+        std::fstream out;
+        out.open("sda_TLP_EXTEND_0.2_"+std::to_string(iter_num)+".txt",std::ios::out);
+        if (!out.is_open()){
+            std::cout<<"failed to open file\n";
+        }
+    for(int k=0;k<iter_num;k++){
+        
+        pp->setStartAndGoalStates(jnv2,jnv3);
+        //time_ik_start=ros::Time::now();
+        if(!pp->plan(time_plan_project)){
+            continue;
+        }
+        success_time++;
+        double cost=pp->getPathCost();
+        std::cout<<k<<":"<<pp->ss_->getLastPlanComputationTime()<<":"<<cost<<std::endl;
+        out<<success_time<<","<<pp->ss_->getLastPlanComputationTime()<<","<<cost<<std::endl;
+        all_time +=pp->ss_->getLastPlanComputationTime();
+        all_cost+=cost;
+        //time_ik_end=ros::Time::now();
+        //std::cout<<"time:"<<time_ik_end-time_ik_start<<std::endl;
+        // pp->getTrajectoryMsg(robot_trajectory);
+        // std::cout<<"points number:"<<robot_trajectory.joint_trajectory.points.size()<<std::endl;
+        // display_trajectory.trajectory.push_back(robot_trajectory);
+        // display_publisher.publish(display_trajectory);
+        // pp->publishTrajectoryLine(visual_tools,rviz_visual_tools::GREEN,error_pose);
 
-    // visual_tools.prompt("next");
-    // pm->execute(robot_trajectory,false);
-    // ROS_INFO("trajectory completed.");
-    
-    // display_trajectory.trajectory.clear();
-    pp->ss_->clear();
-}   
-    out.seekg(std::ios::beg);
-    std::cout<<"avg time:"<<all_time/iter_num<<"  avg cost:"<<all_cost/iter_num<<std::endl;
-    out<<std::to_string(iter_num)<<":"<<success_time<<"\nsuccess rate:"<<(double)success_time/(double)(iter_num)<<"\navg time:"<<all_time/success_time<<"\navg cost:"<<all_cost/iter_num<<std::endl;
-    out.close();
+        // visual_tools.prompt("next");
+        // pm->execute(robot_trajectory,false);
+        // ROS_INFO("trajectory completed.");
+        
+        // display_trajectory.trajectory.clear();
+        pp->ss_->clear();
+    }   
+        out.seekg(std::ios::beg);
+        std::cout<<"avg time:"<<all_time/iter_num<<"  avg cost:"<<all_cost/iter_num<<std::endl;
+        out<<std::to_string(iter_num)<<":"<<success_time<<"\nsuccess rate:"<<(double)success_time/(double)(iter_num)<<"\navg time:"<<all_time/success_time<<"\navg cost:"<<all_cost/iter_num<<std::endl;
+        out.close();
+}
 
 //     std::cout<<"any key to continue\n";
 // }
@@ -289,6 +290,18 @@ for(int k=0;k<iter_num;k++){
 
     ros::shutdown();
     return 0;
+}
+
+void printHelp(){
+    std::cout<<"****************************************\n  \
+                argv[1]=0.2:     planning step          \n\
+                argv[2]=10:     planning time           \n\
+                argv[3]=0.02:   interpolation step      \n\
+                argv[4]=1:      iteration times         \n\
+                - if no args, it will execute with common  planning\n\
+                - if 3 args, it will execute with end-effector constraint planning\n\
+                - if 4 args, it will execute with constraint planning for many times\n \
+               ****************************************\n";
 }
 
 /**

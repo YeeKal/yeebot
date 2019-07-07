@@ -95,6 +95,7 @@ int main(int argc,char **argv){
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name,true));
+    pm->updateRobotState();
     yeebot::PlanningContextPtr pn,pp;
     pn.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::NORMAL));
     pp.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::AXIS_PROJECT));
@@ -126,12 +127,8 @@ int main(int argc,char **argv){
     visual_tools.trigger();
     visual_tools.prompt("next");
 
-    yeebot_commute::JointInfo joint_info;
-    joint_info.request.joint_names=pm->active_joint_names_;//for sda, 
-    if(client.call(joint_info)){
-        ref_jnv=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
-        std::cout<<"ref jnv:"<<ref_jnv.transpose()<<std::endl;
-    }
+    pm->getCurrentJnv(ref_jnv);
+    std::cout<<"ref_jnv:"<<ref_jnv.transpose()<<std::endl;
 //move from ref to jnv1
     pn->setStartAndGoalStates(ref_jnv,jnv1);
     if(!pn->plan(time_plan_normal)){

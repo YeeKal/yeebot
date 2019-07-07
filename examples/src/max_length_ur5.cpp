@@ -70,6 +70,7 @@ int main(int argc,char **argv){
 
     yeebot::PlanningManagerPtr pm;
     pm.reset(new yeebot::PlanningManager(group_name));
+    pm->updateRobotState();
 
     yeebot::PlanningContextPtr pp,pc;
     pc.reset(new yeebot::PlanningContext(planning_spec,pm,yeebot::PlanType::NORMAL));
@@ -121,11 +122,8 @@ int main(int argc,char **argv){
     Eigen::VectorXd ref_jnv(dim),jnv0(dim),start_jnv1(dim),target_jnv1(dim);
     Eigen::Affine3d start_pose1, target_pose1;
     yeebot_commute::JointInfo joint_info;
-    joint_info.request.joint_names=pm->active_joint_names_;
-    if(client.call(joint_info)){
-        jnv0=Eigen::Map<Eigen::VectorXd>(&joint_info.response.position[0],dim);
-        std::cout<<"joint values:"<<jnv0.transpose()<<std::endl;
-    }
+    pm->getCurrentJnv(ref_jnv);
+    std::cout<<"ref_jnv:"<<ref_jnv.transpose()<<std::endl;
 
     if(is_project<0){
         ros::shutdown();
