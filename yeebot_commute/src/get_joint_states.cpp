@@ -92,9 +92,11 @@ void retriveJointValues(const sensor_msgs::JointState& joint_state){
     if(joint_state.velocity.size()!=joint_state.position.size()){
         add_vel=false;
         add_eff=false;
+        //std::cout<<"not v\n";
     }
     else if(joint_state.effort.size()!=joint_state.position.size()){
         add_eff=false;
+        //std::cout<<"not e\n";
     }
     pthread_mutex_lock(&mutex);
     //check if the name not added before
@@ -102,8 +104,9 @@ void retriveJointValues(const sensor_msgs::JointState& joint_state){
         std::vector<std::string>::iterator iter=std::find(name.begin(),name.end(),joint_state.name[i]);
         if(iter !=name.end()){  //is exist before
         	int pos=std::distance(name.begin(),iter);
-            name[pos]=joint_state.name[pos];
+            //name[pos]=joint_state.name[pos];//not needeed
             position[pos]=joint_state.position[i];
+            //std::cout<<"exist:"<<name[pos]<<":"<<position[pos]<<std::endl;
             if(add_eff){
                 velocity[pos]=joint_state.velocity[i];
                 effort[pos]=joint_state.effort[i];
@@ -114,6 +117,7 @@ void retriveJointValues(const sensor_msgs::JointState& joint_state){
         else{
         	name.push_back(joint_state.name[i]);
             position.push_back(joint_state.position[i]);
+            //std::cout<<"not exist:"<<name.back()<<":"<<position.back()<<std::endl;
             if(add_eff){
                 velocity.push_back(joint_state.velocity[i]);
                 effort.push_back(joint_state.effort[i]);
