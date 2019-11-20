@@ -179,7 +179,7 @@ bool PlanningManager::moveitPlan(Eigen::VectorXd& jnv,moveit_msgs::RobotTrajecto
     Eigen::Map<Eigen::VectorXd>(jnv0.data(),jnv.size())=jnv;
     move_group_->setJointValueTarget(jnv0);
     moveit::planning_interface::MoveGroupInterface::Plan my_plan;
-    if(! move_group_->plan(my_plan)){
+    if(move_group_->plan(my_plan)!=moveit::planning_interface::MoveItErrorCode::SUCCESS){
         return false;
     }
     robot_trajectory=my_plan.trajectory_;

@@ -68,7 +68,7 @@ public:
     bool use_moveit_;
  
 
-private:
+//private:
     ros::NodeHandle node_handle_;//for action client
     //某一时刻，只能有一个unique_ptr指向一个给定的对象
     //不支持拷贝

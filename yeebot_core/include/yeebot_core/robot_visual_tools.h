@@ -128,6 +128,26 @@ public:
 
         //pubScene(planning_scene_k,0.5);
     }
+    void publishMesh(std::string id,std::string mesh_file_path,Eigen::Affine3d mesh_pose, Eigen::Vector3d scale=Eigen::Vector3d(1.0,1.0,1.0)){
+        moveit_msgs::CollisionObject collision_object;
+        collision_object.header.frame_id=base_frame_;
+        collision_object.id=id;
+
+        shapes::Mesh* mesh_file=shapes::createMeshFromResource(mesh_file_path,scale);
+        shapes::ShapeMsg house_file_msg;
+        shapes::constructMsgFromShape(mesh_file,house_file_msg);
+        shape_msgs::Mesh mesh_shape_msg;
+        mesh_shape_msg=boost::get<shape_msgs::Mesh>(house_file_msg);
+
+        geometry_msgs::Pose mesh_pose_msg;
+        tf::poseEigenToMsg(mesh_pose,mesh_pose_msg);
+
+        collision_object.meshes.push_back(mesh_shape_msg);
+        collision_object.mesh_poses.push_back(mesh_pose_msg);
+        collision_object.operation=collision_object.ADD;
+
+        publishCollisionBoth(collision_object);
+    }
     void delCube(unsigned int id){
        
         //to planning scene
@@ -333,6 +353,16 @@ public:
         planning_scene_k.world.collision_objects.push_back(remove_object);
         pubScene(planning_scene_k,0.5);
 
+    }
+    void publishCollisionBoth(moveit_msgs::CollisionObject &collision_object,double sleep_time=0.5){
+        moveit_msgs::PlanningScene planning_scene_k;
+        planning_scene_k.world.collision_objects.push_back(collision_object);
+        planning_scene_k.is_diff = true;
+
+        scene_diff_pub_.publish(planning_scene_k);//to moveit or to rviz
+        planning_scene_->processCollisionObjectMsg(collision_object);
+        ros::WallDuration sleep_t(sleep_time);
+        sleep_t.sleep();
     }
     void pubScene(moveit_msgs::PlanningScene& planning_scene_k,double sleep_time=0.5){
 
